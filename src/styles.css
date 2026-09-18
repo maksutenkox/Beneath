@@ -1,0 +1,204 @@
+:root {
+  color-scheme: dark;
+  font-family: "Courier New", monospace;
+  background: #080c0f;
+  color: #d7dfca;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+}
+
+* { box-sizing: border-box; }
+
+html, body, #app {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body { background: #080c0f; }
+
+.game-shell { position: relative; isolation: isolate; }
+
+#game-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  background: #0b1014;
+}
+
+.scene-label {
+  position: absolute;
+  top: calc(18px + var(--safe-top));
+  left: calc(22px + var(--safe-left));
+  padding: 8px 11px;
+  border: 1px solid #544a32;
+  border-left: 3px solid #c4933e;
+  background: rgb(8 13 15 / 78%);
+  box-shadow: 3px 3px 0 rgb(0 0 0 / 38%);
+  pointer-events: none;
+}
+
+.scene-label .eyebrow {
+  color: #c4933e;
+  font-size: 8px;
+  letter-spacing: .22em;
+}
+
+.scene-label h1 { margin: 3px 0; font-size: 14px; }
+.scene-label p { margin: 0; color: #737f7e; font-size: 8px; }
+
+.resource-hud {
+  position: absolute;
+  top: calc(18px + var(--safe-top));
+  right: calc(22px + var(--safe-right));
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid #4f4939;
+  border-top: 2px solid #b78437;
+  background: rgb(8 13 15 / 80%);
+  box-shadow: 3px 3px 0 rgb(0 0 0 / 32%);
+}
+
+.resource-hud span { min-width: 40px; padding: 3px 6px; color: #77817e; background: #101719; text-align: right; }
+.resource-hud small { display: block; color: #a87835; font: bold 6px monospace; letter-spacing: .1em; }
+.resource-hud b { color: #e3c078; font-size: 11px; }
+
+.repair-panel {
+  position: absolute;
+  z-index: 6;
+  top: 50%;
+  left: 50%;
+  width: min(360px, 72vw);
+  padding: 20px;
+  transform: translate(-50%, -50%);
+  border: 1px solid #68736b;
+  background: rgb(9 14 17 / 96%);
+  box-shadow: 8px 10px 0 rgb(0 0 0 / 45%);
+}
+
+.repair-panel[hidden] { display: none; }
+.repair-panel .eyebrow { color: #a6b66f; font-size: 9px; letter-spacing: .18em; }
+.repair-panel h2 { margin: 5px 0 8px; font-size: 18px; }
+.repair-panel h3 { margin: 16px 0 7px; color: #89968a; font-size: 10px; text-transform: uppercase; }
+.repair-panel p { margin: 0; color: #89968a; font-size: 11px; }
+.repair-panel strong[data-state="DAMAGED"] { color: #d4775d; }
+.repair-panel strong[data-state="ACTIVE"] { color: #a6b66f; }
+.repair-panel ul { margin: 0; padding: 0; list-style: none; }
+.repair-panel li { display: flex; justify-content: space-between; padding: 7px 8px; border-top: 1px solid #263032; font-size: 11px; }
+.repair-panel li.enough b { color: #a6b66f; }
+.repair-panel li.missing b { color: #d4775d; }
+.repair-panel__close { position: absolute; top: 8px; right: 8px; border: 0; background: none; color: #89968a; font-size: 22px; }
+.repair-panel__action { width: 100%; margin-top: 15px; padding: 10px; border: 1px solid #a6b66f; background: #48532f; color: #fff; font: bold 11px monospace; text-transform: uppercase; }
+.repair-panel__action:disabled { border-color: #3b4544; background: #202829; color: #66706e; }
+
+.status-toast {
+  position: absolute;
+  z-index: 8;
+  left: 50%;
+  bottom: calc(28px + var(--safe-bottom));
+  transform: translateX(-50%);
+  padding: 11px 18px;
+  border: 1px solid #b56850;
+  background: rgb(24 16 15 / 94%);
+  color: #e0a17d;
+  font: bold 11px monospace;
+  letter-spacing: .08em;
+  box-shadow: 4px 5px 0 rgb(0 0 0 / 40%);
+}
+
+.status-toast[hidden] { display: none; }
+
+.mobile-controls {
+  position: absolute;
+  inset: auto 0 0;
+  height: 148px;
+  pointer-events: none;
+  touch-action: none;
+}
+
+.analog-stick {
+  position: absolute;
+  left: calc(22px + var(--safe-left));
+  bottom: calc(18px + var(--safe-bottom));
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+}
+
+.analog-stick__ring {
+  position: absolute;
+  inset: 0;
+  border: 2px solid rgb(132 148 133 / 58%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(40 53 50 / 48%) 0 38%, rgb(13 21 23 / 78%) 40% 100%);
+  box-shadow: inset 0 0 0 8px rgb(6 10 11 / 24%), 3px 4px 0 rgb(0 0 0 / 30%);
+}
+
+.analog-stick__knob {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  left: 32px;
+  top: 32px;
+  border: 2px solid #7e8d78;
+  border-radius: 50%;
+  background: #34413b;
+  box-shadow: inset -5px -6px 0 rgb(12 18 18 / 32%), 2px 3px 0 rgb(0 0 0 / 42%);
+  will-change: transform;
+}
+
+.interaction-button {
+  position: absolute;
+  right: calc(25px + var(--safe-right));
+  bottom: calc(30px + var(--safe-bottom));
+  width: 92px;
+  height: 92px;
+  border: 1px solid #69766a;
+  border-radius: 50%;
+  background: rgb(18 27 28 / 82%);
+  color: #c7d0bb;
+  font: bold 10px monospace;
+  text-transform: uppercase;
+  pointer-events: auto;
+  touch-action: manipulation;
+  box-shadow: inset -6px -7px 0 rgb(0 0 0 / 22%), 3px 4px 0 rgb(0 0 0 / 42%);
+}
+
+.interaction-button:not(:disabled) { border-color: #bf8b3d; background: #4f4228; color: #fff; }
+.interaction-button:not(:disabled):active { transform: translateY(2px); }
+.interaction-button:disabled { opacity: .4; }
+.interaction-button__key { display: block; margin-bottom: 4px; color: #e1b868; font-size: 20px; }
+
+.orientation-gate {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: none;
+  place-items: center;
+  padding: 28px;
+  text-align: center;
+  background: #080c0f;
+}
+
+.orientation-gate span { display: block; color: #a6b66f; font-size: 48px; }
+.orientation-gate strong { display: block; margin-top: 12px; font-size: 18px; }
+.orientation-gate p { color: #89968a; font-size: 12px; }
+
+@media (orientation: portrait) {
+  .orientation-gate { display: grid; }
+}
+
+@media (max-height: 420px) {
+  .scene-label { top: calc(10px + var(--safe-top)); left: calc(12px + var(--safe-left)); padding: 8px 12px; }
+  .scene-label h1 { font-size: 14px; }
+  .mobile-controls { transform: scale(.82); transform-origin: bottom left; width: 122%; }
+}

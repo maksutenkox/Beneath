@@ -1,0 +1,55 @@
+import { GameCore } from "./game/core/GameCore.js";
+import { IsometricScene } from "./game/rendering/IsometricScene.js";
+import { SaveStore } from "./game/save/SaveStore.js";
+import { shelterMap } from "./game/map/ShelterMap.js";
+import { CollisionMap } from "./game/physics/CollisionMap.js";
+import { InputController } from "./game/input/InputController.js";
+import { CameraController } from "./game/camera/CameraController.js";
+import { InteractionSystem } from "./game/interaction/InteractionSystem.js";
+import { DoorSystem } from "./game/doors/DoorSystem.js";
+import { SectorStateSystem } from "./game/sectors/SectorStateSystem.js";
+import { ResourceHud } from "./platform/ui/ResourceHud.js";
+import { RepairPanel } from "./platform/ui/RepairPanel.js";
+import { RepairSystem } from "./game/repair/RepairSystem.js";
+import { NpcSystem } from "./game/npc/NpcSystem.js";
+import { PopulationSystem } from "./game/population/PopulationSystem.js";
+import { StatusToast } from "./platform/ui/StatusToast.js";
+import { LightingSystem } from "./game/lighting/LightingSystem.js";
+import { AudioSystem } from "./game/audio/AudioSystem.js";
+import { WebAudioOutput } from "./platform/audio/WebAudioOutput.js";
+import { createPlatform } from "./platform/createPlatform.js";
+
+const canvas = document.querySelector("#game-canvas");
+const platformStatus = document.querySelector("#platform-status");
+const platform = createPlatform();
+const sectorStates = new SectorStateSystem(shelterMap);
+const collisionMap = new CollisionMap(shelterMap, sectorStates);
+const input = new InputController(document);
+const camera = new CameraController(shelterMap);
+const doors = new DoorSystem(shelterMap.doors);
+const interactions = new InteractionSystem(shelterMap, doors, sectorStates);
+const resourceHud = new ResourceHud(document);
+const repairPanel = new RepairPanel(document);
+const repairs = new RepairSystem(sectorStates, shelterMap);
+const npcs = new NpcSystem(shelterMap.npcs, collisionMap, sectorStates);
+const population = new PopulationSystem();
+const statusToast = new StatusToast(document);
+const lighting = new LightingSystem(sectorStates);
+const audio = new AudioSystem(new WebAudioOutput(window));
+const renderer = new IsometricScene(canvas, shelterMap, sectorStates, lighting);
+const saveStore = new SaveStore(window.localStorage);
+const game = new GameCore({ renderer, saveStore, collisionMap, input, camera, interactions, doors, resourceHud, repairPanel, repairs, npcs, population, statusToast, audio });
+
+platform.initialize();
+input.initialize();
+const unlockAudio = () => audio.unlock();
+window.addEventListener("pointerdown", unlockAudio, { once: true, passive: true });
+window.addEventListener("keydown", unlockAudio, { once: true });
+platformStatus.textContent = "ONLINE";
+
+const removePauseListener = platform.onPause(() => game.save());
+window.addEventListener("resize", () => renderer.resize(), { passive: true });
+window.addEventListener("pagehide", () => game.save(), { passive: true });
+window.addEventListener("beforeunload", () => { removePauseListener(); input.destroy(); }, { once: true });
+
+await game.start();
