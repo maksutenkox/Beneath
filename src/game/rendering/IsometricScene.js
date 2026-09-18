@@ -212,8 +212,29 @@ export class IsometricScene {
   }
 
   #drawWalls(tile) {
-    if (!floorAt(this.#map, tile.x, tile.y - 1)) this.#wallFace(tile.x, tile.y, "north");
-    if (!floorAt(this.#map, tile.x - 1, tile.y)) this.#wallFace(tile.x, tile.y, "west");
+    const north = floorAt(this.#map, tile.x, tile.y - 1);
+    const west = floorAt(this.#map, tile.x - 1, tile.y);
+
+    if (!north || (north.zone !== tile.zone && !this.#hasDoorOnEdge(tile.x, tile.y, "north"))) {
+      this.#wallFace(tile.x, tile.y, "north");
+    }
+    if (!west || (west.zone !== tile.zone && !this.#hasDoorOnEdge(tile.x, tile.y, "west"))) {
+      this.#wallFace(tile.x, tile.y, "west");
+    }
+  }
+
+  #hasDoorOnEdge(x, y, orientation) {
+    const opposite = { north: "south", south: "north", east: "west", west: "east" }[orientation];
+    const neighbor = {
+      north: { x, y: y - 1 },
+      south: { x, y: y + 1 },
+      east: { x: x + 1, y },
+      west: { x: x - 1, y }
+    }[orientation];
+    return this.#map.doors.some((door) =>
+      (door.x === x && door.y === y && door.orientation === orientation)
+      || (door.x === neighbor.x && door.y === neighbor.y && door.orientation === opposite)
+    );
   }
 
   #wallFace(x, y, side) {
@@ -234,12 +255,13 @@ export class IsometricScene {
     const p = this.#iso(item.x + .5, item.y + .5);
     if (item.kind === "generator") p.y += Math.sin(this.#sceneTime * 12 + item.x) * .7 * this.#dpr;
     const sprite = this.#sprites.object(item.kind, Math.floor(this.#sceneTime * 4));
-    const scale = Math.max(1, Math.round(this.#tileWidth / 48));
+    const scale = Math.max(this.#dpr, Math.round(this.#tileWidth / (64 * this.#dpr)) * this.#dpr);
     const width = sprite.width * scale, height = sprite.height * scale;
     const ctx = this.#context;
-    ctx.save(); ctx.imageSmoothingEnabled=false;
-    ctx.fillStyle="rgb(0 0 0 / 45%)"; ctx.beginPath(); ctx.ellipse(p.x,p.y+this.#tileHeight*.33,this.#tileWidth*.3,this.#tileHeight*.15,0,0,Math.PI*2); ctx.fill();
-    ctx.drawImage(sprite, Math.round(p.x-width/2), Math.round(p.y-height+this.#tileHeight*.38), width, height);
+    ctx.save(); ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = "rgb(0 0 0 / 38%)";
+    ctx.beginPath(); ctx.ellipse(p.x, p.y + this.#tileHeight * .36, this.#tileWidth * .24, this.#tileHeight * .1, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.drawImage(sprite, Math.round(p.x - width / 2), Math.round(p.y - height + this.#tileHeight * .4), width, height);
     ctx.restore();
   }
 
