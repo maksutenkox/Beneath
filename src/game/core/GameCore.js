@@ -1,5 +1,5 @@
 const SAVE_VERSION = 2;
-import { createInitialInventory } from "../resources/ResourceCatalog.js";
+import { createInitialInventory, resourceById } from "../resources/ResourceCatalog.js";
 import { EXPEDITION_UNAVAILABLE_MESSAGE } from "../interaction/Messages.js";
 
 export class GameCore {
@@ -129,12 +129,38 @@ export class GameCore {
     this.#state.interaction.targetId = target?.id ?? null;
     this.#input.setInteractionAvailable(Boolean(target), this.#interactions.label(target));
     if (this.#input.consumeInteraction()) {
-      this.#state.interaction.lastResult = this.#interactions.interact(target, this.#state.world);
-      this.#audio.play(target?.type === "door" || target?.type === "airlock" ? "doorMove" : target?.type === "npc" ? "npcTalk" : target?.type === "equipment" ? "equipmentUse" : "uiAction");
+      const result = this.#interactions.interact(target, this.#state.world);
+      this.#state.interaction.lastResult = result;
+      if (result?.actionPerformed !== false) {
+        this.#audio.play(target?.type === "door" || target?.type === "airlock" ? "doorMove" : target?.type === "npc" ? "npcTalk" : target?.type === "equipment" ? "equipmentUse" : "uiAction");
+      }
       this.#state.interaction.lastResultAt = player.animationTime;
-      const sectorId = this.#state.interaction.lastResult?.sectorId;
+      const sectorId = result?.sectorId;
       if (sectorId && this.#repairs.isRepairable(sectorId)) this.#showRepairPanel(sectorId);
-      if (this.#state.interaction.lastResult?.type === "expedition") this.#statusToast.show(EXPEDITION_UNAVAILABLE_MESSAGE);
+      if (result?.type === "container") this.#applyContainerLoot(result);
+      if (result?.type === "expedition") this.#statusToast.show(EXPEDITION_UNAVAILABLE_MESSAGE);
+    }
+  }
+
+  #applyContainerLoot(result) {
+    const loot = result?.loot ?? [];
+    if (!loot.length) {
+      if (result?.message) this.#statusToast.show(result.message);
+      return;
+    }
+
+    const found = [];
+    for (const { resourceId, amount } of loot) {
+      const value = Math.max(0, Number(amount) || 0);
+      if (!value) continue;
+      this.#state.resources[resourceId] = (this.#state.resources[resourceId] ?? 0) + value;
+      found.push(`${resourceById(resourceId)?.name ?? resourceId} +${value}`);
+    }
+
+    if (found.length) {
+      this.#resourceHud.render(this.#state.resources, this.#state.population?.count ?? null);
+      this.#statusToast.show(`НАЙДЕНО: ${found.join(" · ")}`);
+      void this.save();
     }
   }
 
