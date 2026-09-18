@@ -53,16 +53,16 @@ export const shelterMap = Object.freeze({
     { id: "igor", name: "Игорь", profession: "Technician", workZone: "airlock", x: 25.5, y: 10.5, color: "#645744", waypoints: [{ x: 25.5, y: 10.5, activity: "work" }, { x: 27.5, y: 11.5, activity: "sit" }, { x: 24.5, y: 8.5, activity: "work" }] }
   ],
   doors: [
-    { id: "living-door", type: "door", doorKind: "automatic", x: 5, y: 8, orientation: "north", open: false },
-    { id: "storage-door", type: "door", doorKind: "manual", x: 6, y: 11, orientation: "south", open: true },
-    { id: "generator-door", type: "door", doorKind: "manual", x: 12, y: 8, orientation: "north", open: false },
-    { id: "medical-door", type: "door", sectorId: "medical", doorKind: "damaged", x: 13, y: 11, orientation: "south", open: false },
-    { id: "workshop-door", type: "door", sectorId: "workshop", doorKind: "damaged", x: 20, y: 8, orientation: "north", open: false },
-    { id: "additional-door", type: "door", doorKind: "locked", x: 20, y: 13, orientation: "south", open: false },
-    { id: "unknown-north-door", type: "door", doorKind: "locked", x: 23, y: 4, orientation: "east", open: false },
-    { id: "unknown-south-door", type: "door", doorKind: "locked", x: 23, y: 16, orientation: "east", open: false },
-    { id: "airlock-inner", type: "airlock", doorKind: "bulkhead", x: 23, y: 9, orientation: "west", open: true },
-    { id: "airlock-outer", type: "airlock", doorKind: "bulkhead", locked: true, x: 28, y: 9, orientation: "east", open: false, label: "ВЫХОД" }
+    { id: "living-door", type: "door", doorKind: "automatic", visualStyle: "metal", x: 5, y: 8, orientation: "north", open: false },
+    { id: "storage-door", type: "door", doorKind: "manual", visualStyle: "metal", x: 6, y: 11, orientation: "south", open: true },
+    { id: "generator-door", type: "door", doorKind: "manual", visualStyle: "metal", x: 12, y: 8, orientation: "north", open: false },
+    { id: "medical-door", type: "door", sectorId: "medical", doorKind: "damaged", visualStyle: "metal", x: 13, y: 11, orientation: "south", open: false },
+    { id: "workshop-door", type: "door", sectorId: "workshop", doorKind: "damaged", visualStyle: "metal", x: 20, y: 8, orientation: "north", open: false },
+    { id: "additional-door", type: "door", doorKind: "locked", visualStyle: "metal", x: 20, y: 13, orientation: "south", open: false },
+    { id: "unknown-north-door", type: "door", doorKind: "locked", visualStyle: "metal", x: 23, y: 4, orientation: "east", open: false },
+    { id: "unknown-south-door", type: "door", doorKind: "locked", visualStyle: "metal", x: 23, y: 16, orientation: "east", open: false },
+    { id: "airlock-inner", type: "airlock", doorKind: "bulkhead", visualStyle: "metal", x: 23, y: 9, orientation: "west", open: true },
+    { id: "airlock-outer", type: "airlock", doorKind: "bulkhead", visualStyle: "hermetic", locked: true, x: 28, y: 9, orientation: "east", open: false, label: "ВЫХОД" }
   ],
   blockedPassages: [
     { x: 20, y: 14, orientation: "north" },
@@ -107,17 +107,23 @@ export const shelterMap = Object.freeze({
     { id: "central-pipe", zone: "central", kind: "pipe", x: 7.2, y: 10.7 },
     { id: "central-cable", zone: "central", kind: "cable", x: 17.4, y: 10.2 },
     { id: "central-trash", zone: "central", kind: "trash", x: 2.8, y: 9.3 },
+    { id: "central-bench", zone: "central", kind: "bench", x: 5.4, y: 10.45 },
+    { id: "central-wallpanel", zone: "central", kind: "wallpanel", x: 18.2, y: 8.35 },
 
     { id: "living-table", zone: "living", kind: "table", x: 5.2, y: 5.3 },
     { id: "living-mug", zone: "living", kind: "mug", x: 5.15, y: 5.25 },
     { id: "living-photo", zone: "living", kind: "personal", x: 2.8, y: 6.4 },
     { id: "living-vent", zone: "living", kind: "vent", x: 7.5, y: 2.4 },
     { id: "living-cabinet", zone: "living", kind: "cabinet", x: 2.5, y: 3.8 },
+    { id: "living-shelf", zone: "living", kind: "shelf", x: 7.35, y: 4.7 },
+    { id: "living-stool", zone: "living", kind: "stool", x: 5.85, y: 5.65 },
 
     { id: "storage-tools", zone: "storage", kind: "tools", x: 7.4, y: 17.3 },
     { id: "storage-sign", zone: "storage", kind: "sign", x: 2.6, y: 12.5, text: "ST-02" },
     { id: "storage-cable", zone: "storage", kind: "cable", x: 6.8, y: 13.2 },
     { id: "storage-trash", zone: "storage", kind: "trash", x: 2.9, y: 17.5 },
+    { id: "storage-shelf-a", zone: "storage", kind: "shelf", x: 2.7, y: 15.5 },
+    { id: "storage-shelf-b", zone: "storage", kind: "shelf", x: 7.45, y: 14.45 },
 
     { id: "generator-pipe-a", zone: "generator", kind: "pipe", x: 10.5, y: 6.8 },
     { id: "generator-pipe-b", zone: "generator", kind: "pipe", x: 14.6, y: 2.4 },
@@ -125,6 +131,8 @@ export const shelterMap = Object.freeze({
     { id: "generator-tools", zone: "generator", kind: "tools", x: 15.2, y: 5.6 },
     { id: "generator-lamp", zone: "generator", kind: "lamp", x: 13.5, y: 4.4 },
     { id: "generator-steam", zone: "generator", kind: "steam", x: 10.8, y: 3.2 },
+    { id: "generator-wallpanel", zone: "generator", kind: "wallpanel", x: 10.7, y: 5.15 },
+    { id: "generator-bench", zone: "generator", kind: "bench", x: 15.15, y: 3.7 },
 
     { id: "medical-table", zone: "medical", kind: "table", x: 14.2, y: 14.4 },
     { id: "medical-mug", zone: "medical", kind: "mug", x: 14.2, y: 14.35 },
@@ -132,6 +140,8 @@ export const shelterMap = Object.freeze({
     { id: "medical-cable", zone: "medical", kind: "cable", x: 15.5, y: 13.2 },
     { id: "medical-scratch", zone: "medical", kind: "damage", x: 16.2, y: 17.1 },
     { id: "medical-drip", zone: "medical", kind: "drip", x: 10.8, y: 12.6 },
+    { id: "medical-shelf", zone: "medical", kind: "shelf", x: 15.35, y: 14.15 },
+    { id: "medical-stool", zone: "medical", kind: "stool", x: 13.3, y: 14.8 },
 
     { id: "workshop-table", zone: "workshop", kind: "table", x: 21.2, y: 4.5 },
     { id: "workshop-tools", zone: "workshop", kind: "tools", x: 21.1, y: 4.4 },
@@ -139,6 +149,8 @@ export const shelterMap = Object.freeze({
     { id: "workshop-vent", zone: "workshop", kind: "vent", x: 22.5, y: 2.5 },
     { id: "workshop-trash", zone: "workshop", kind: "trash", x: 19.3, y: 6.1 },
     { id: "workshop-sparks", zone: "workshop", kind: "spark", x: 22.2, y: 6.2 },
+    { id: "workshop-shelf", zone: "workshop", kind: "shelf", x: 18.75, y: 3.55 },
+    { id: "workshop-wallpanel", zone: "workshop", kind: "wallpanel", x: 22.25, y: 4.1 },
 
     { id: "airlock-sign", zone: "airlock", kind: "sign", x: 24.2, y: 7.5, text: "AIRLOCK" },
     { id: "airlock-pipe", zone: "airlock", kind: "pipe", x: 24.5, y: 12.7 },
@@ -146,6 +158,8 @@ export const shelterMap = Object.freeze({
     { id: "airlock-tools", zone: "airlock", kind: "tools", x: 26.3, y: 8.4 },
     { id: "airlock-steam", zone: "airlock", kind: "steam", x: 27.7, y: 12.2 },
     { id: "airlock-lamp", zone: "airlock", kind: "lamp", x: 26.5, y: 9.2 },
+    { id: "airlock-bench", zone: "airlock", kind: "bench", x: 24.65, y: 11.65 },
+    { id: "airlock-wallpanel", zone: "airlock", kind: "wallpanel", x: 27.25, y: 8.15 },
 
     { id: "additional-cable", zone: "additional", kind: "cable", x: 19.3, y: 19.4 },
     { id: "additional-personal", zone: "additional", kind: "personal", x: 22.2, y: 18.3 },
