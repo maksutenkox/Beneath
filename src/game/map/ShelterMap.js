@@ -73,7 +73,7 @@ export const shelterMap = Object.freeze({
     { x: 3, y: 6, kind: "bed" }, { x: 7, y: 6, kind: "locker" },
     { id: "storage-crate-a", type: "container", x: 3, y: 13, kind: "crate", loot: [{ resourceId: "electronicComponents", amount: 2 }] },
     { id: "storage-crate-b", type: "container", x: 5, y: 14, kind: "crate", loot: [{ resourceId: "food", amount: 4 }, { resourceId: "water", amount: 3 }] },
-    { id: "storage-crate-c", type: "container", x: 7, y: 16, kind: "crate" },
+    { id: "storage-crate-c", type: "container", x: 7, y: 16, kind: "crate", loot: [{ resourceId: "medicine", amount: 1 }, { resourceId: "power", amount: 4 }] },
     { x: 3, y: 17, kind: "locker" },
     { id: "generator-a", type: "equipment", x: 11, y: 3, kind: "generator" },
     { id: "generator-b", type: "equipment", x: 14, y: 3, kind: "generator" },
