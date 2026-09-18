@@ -9,7 +9,7 @@ const PALETTE = {
 };
 
 export class IsometricScene {
-  #canvas; #context; #map; #sectorStates; #lighting; #staticEntities; #sprites; #dpr = 1; #tileWidth = 60; #tileHeight = 30; #originX = 0; #originY = 0; #sceneTime = 0;
+  #canvas; #context; #map; #sectorStates; #lighting; #staticEntities; #orderedFloors; #sprites; #dpr = 1; #tileWidth = 60; #tileHeight = 30; #originX = 0; #originY = 0; #sceneTime = 0;
 
   constructor(canvas, map, sectorStates, lighting) {
     this.#canvas = canvas;
@@ -23,6 +23,7 @@ export class IsometricScene {
       ...map.blockedPassages.map((item) => ({ item, entity: "sealed" })),
       ...(map.decorations ?? []).map((item) => ({ item, entity: "decoration" }))
     ];
+    this.#orderedFloors = [...map.floors].sort((a, b) => (a.x + a.y) - (b.x + b.y) || a.x - b.x);
     this.#context = canvas.getContext("2d", { alpha: false });
     this.#context.imageSmoothingEnabled = false;
   }
@@ -47,10 +48,9 @@ export class IsometricScene {
     ctx.fillStyle = "#080d10"; ctx.fillRect(0, 0, this.#canvas.width, this.#canvas.height);
     this.#drawBackdrop();
     this.#positionCamera(state.camera ?? state.player);
-    const ordered = [...this.#map.floors].sort((a, b) => (a.x + a.y) - (b.x + b.y) || a.x - b.x);
-    for (const tile of ordered) this.#drawFloor(tile);
-    for (const tile of ordered) this.#drawWalls(tile);
-    this.#drawSectorEffects(ordered, state.player.animationTime);
+    for (const tile of this.#orderedFloors) this.#drawFloor(tile);
+    for (const tile of this.#orderedFloors) this.#drawWalls(tile);
+    this.#drawSectorEffects(this.#orderedFloors, state.player.animationTime);
     this.#drawLighting();
     const entities = [
       ...this.#staticEntities.filter(({ item }) => this.#isEntityVisible(item)),
@@ -120,8 +120,10 @@ export class IsometricScene {
     const maxOffsetY = marginTop - minMapY;
     offsetX = minOffsetX > maxOffsetX ? (width - minMapX - maxMapX) / 2 : Math.max(minOffsetX, Math.min(maxOffsetX, offsetX));
     offsetY = minOffsetY > maxOffsetY ? (height - minMapY - maxMapY) / 2 : Math.max(minOffsetY, Math.min(maxOffsetY, offsetY));
-    this.#originX = offsetX;
-    this.#originY = offsetY;
+    // Keep the entire isometric world on the physical pixel grid. Smooth camera
+    // coordinates are preserved in game state, but rendering never lands between pixels.
+    this.#originX = Math.round(offsetX);
+    this.#originY = Math.round(offsetY);
   }
 
   #iso(x, y, z = 0) {
@@ -212,33 +214,6 @@ export class IsometricScene {
     ctx.fillStyle="rgb(0 0 0 / 45%)"; ctx.beginPath(); ctx.ellipse(p.x,p.y+this.#tileHeight*.33,this.#tileWidth*.3,this.#tileHeight*.15,0,0,Math.PI*2); ctx.fill();
     ctx.drawImage(sprite, Math.round(p.x-width/2), Math.round(p.y-height+this.#tileHeight*.38), width, height);
     ctx.restore();
-    return;
-    /* legacy geometric fallback retained below for asset-debugging */
-    const colors = { bed: "#66705e", crate: "#6b5139", locker: "#536166", generator: "#4e5d58", terminal: "#44545a", decon: "#597079", damaged: "#704139", rubble: "#504a45", debris: "#55463f", wire: "#342e2d", screen: "#526b68", workstation: "#56625a", airlockPanel: "#53666b", compressor: "#4d5a5e", beacon: "#806044" };
-    const widths = { bed: .72, crate: .58, locker: .42, generator: .78, terminal: .48, decon: .62, damaged: .7, rubble: .82, debris: .7, wire: .82, screen: .55, workstation: .78, airlockPanel: .6, compressor: .76, beacon: .28 };
-    const h = item.kind === "generator" ? .65 : item.kind === "locker" ? .85 : ["terminal", "screen", "airlockPanel"].includes(item.kind) ? .72 : item.kind === "beacon" ? .9 : item.kind === "wire" ? .18 : .48;
-    const w = widths[item.kind] * this.#tileWidth, hh = w / 2, z = h * this.#tileHeight;
-    this.#polygon([{ x: p.x, y: p.y - z }, { x: p.x + w / 2, y: p.y - z + hh / 2 }, { x: p.x, y: p.y - z + hh }, { x: p.x - w / 2, y: p.y - z + hh / 2 }], colors[item.kind], "#1c2425");
-    this.#polygon([{ x: p.x - w / 2, y: p.y - z + hh / 2 }, { x: p.x, y: p.y - z + hh }, { x: p.x, y: p.y + hh }, { x: p.x - w / 2, y: p.y }], "#36413e", "#1c2425");
-    this.#polygon([{ x: p.x + w / 2, y: p.y - z + hh / 2 }, { x: p.x, y: p.y - z + hh }, { x: p.x, y: p.y + hh }, { x: p.x + w / 2, y: p.y }], "#293432", "#1c2425");
-    if (["generator", "terminal", "screen", "workstation"].includes(item.kind)) {
-      const ctx = this.#context; ctx.fillStyle = ["screen", "workstation"].includes(item.kind) ? "#7de0c1" : "#71a79a";
-      ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = ["screen", "workstation"].includes(item.kind) ? 6 * this.#dpr : 0;
-      ctx.fillRect(p.x - 2 * this.#dpr, p.y - z + 4 * this.#dpr, 4 * this.#dpr, 3 * this.#dpr); ctx.shadowBlur = 0;
-      ctx.fillStyle = "#d5f4ad";
-      const scan = Math.floor(this.#sceneTime * 6 + item.x) % 3;
-      ctx.fillRect(p.x - 2 * this.#dpr, p.y - z + (4 + scan) * this.#dpr, 4 * this.#dpr, this.#dpr);
-    }
-    if (item.kind === "airlockPanel") {
-      const ctx = this.#context; ctx.fillStyle = "#80d5c0"; ctx.shadowColor = "#80d5c0"; ctx.shadowBlur = 8 * this.#dpr;
-      ctx.fillRect(p.x - 4 * this.#dpr, p.y - z + 3 * this.#dpr, 8 * this.#dpr, 5 * this.#dpr); ctx.shadowBlur = 0;
-      ctx.fillStyle = "#d08a45"; ctx.fillRect(p.x - 4 * this.#dpr, p.y - z + 10 * this.#dpr, 3 * this.#dpr, 2 * this.#dpr);
-    }
-    if (item.kind === "beacon" && Math.sin(this.#sceneTime * 7 + item.x) > -.15) {
-      const ctx = this.#context; ctx.fillStyle = "#e67545"; ctx.shadowColor = "#ff6b3a"; ctx.shadowBlur = 12 * this.#dpr;
-      ctx.fillRect(p.x - 2 * this.#dpr, p.y - z, 4 * this.#dpr, 4 * this.#dpr); ctx.shadowBlur = 0;
-    }
-  }
 
   #drawHighlight(item, time = 0) {
     const p = this.#iso(item.x + .5, item.y + .5, .02);
