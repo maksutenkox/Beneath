@@ -40,14 +40,17 @@ export class InteractionSystem {
   interact(target, worldState) {
     if (!target) return null;
     worldState.interacted ??= {};
+    worldState.looted ??= {};
     const previousInteractions = worldState.interacted[target.id] ?? 0;
     const firstInteraction = previousInteractions === 0;
+    const lootCollected = target.type === "container" && !worldState.looted[target.id];
     let actionPerformed = true;
 
     if (target.type === "door" || target.type === "airlock") {
       actionPerformed = this.doorSystem.toggle(target);
     } else if (target.type === "container") {
-      actionPerformed = firstInteraction;
+      actionPerformed = lootCollected;
+      if (lootCollected) worldState.looted[target.id] = true;
     }
 
     worldState.interacted[target.id] = previousInteractions + 1;
@@ -59,8 +62,9 @@ export class InteractionSystem {
       label: LABELS[target.type] ?? "Объект",
       actionPerformed,
       firstInteraction,
-      loot: target.type === "container" && firstInteraction ? [...(target.loot ?? [])] : [],
-      message: target.type === "container" && !firstInteraction ? "Контейнер пуст" : null
+      lootCollected,
+      loot: lootCollected ? [...(target.loot ?? [])] : [],
+      message: target.type === "container" && !lootCollected ? "Контейнер пуст" : null
     };
   }
 }
