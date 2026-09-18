@@ -202,3 +202,32 @@ body { background: #080c0f; }
   .scene-label h1 { font-size: 14px; }
   .mobile-controls { transform: scale(.82); transform-origin: bottom left; width: 122%; }
 }
+
+
+@media (hover: hover) and (pointer: fine) {
+  .mobile-controls {
+    height: 86px;
+  }
+
+  .analog-stick {
+    display: none;
+  }
+
+  .interaction-button {
+    right: calc(22px + var(--safe-right));
+    bottom: calc(18px + var(--safe-bottom));
+    width: auto;
+    min-width: 104px;
+    height: 42px;
+    padding: 0 14px;
+    border-radius: 4px;
+    background: rgb(13 20 22 / 86%);
+    box-shadow: 2px 3px 0 rgb(0 0 0 / 34%);
+  }
+
+  .interaction-button__key {
+    display: inline-block;
+    margin: 0 8px 0 0;
+    font-size: 12px;
+  }
+}

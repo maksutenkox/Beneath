@@ -45,7 +45,7 @@ input.initialize();
 const unlockAudio = () => audio.unlock();
 window.addEventListener("pointerdown", unlockAudio, { once: true, passive: true });
 window.addEventListener("keydown", unlockAudio, { once: true });
-platformStatus.textContent = "ONLINE";
+platformStatus.textContent = "СИСТЕМА АКТИВНА";
 
 const removePauseListener = platform.onPause(() => game.save());
 window.addEventListener("resize", () => renderer.resize(), { passive: true });

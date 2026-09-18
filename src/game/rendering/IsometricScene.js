@@ -2,10 +2,10 @@ import { floorAt } from "../map/ShelterMap.js";
 import { PixelSpriteLibrary } from "./PixelSpriteLibrary.js";
 
 const PALETTE = {
-  central: ["#293437", "#232d30"], living: ["#3b4038", "#343a33"],
-  storage: ["#3d3630", "#352f2a"], generator: ["#33383b", "#2b3134"], airlock: ["#394044", "#30373b"]
-  , medical: ["#453536", "#3a2e30"], workshop: ["#453b32", "#3a322c"],
-  additional: ["#27282a", "#222326"], unknownNorth: ["#20272b", "#1a2125"], unknownSouth: ["#111619", "#0d1215"]
+  central: ["#293437", "#273235"], living: ["#3a3f38", "#383d36"],
+  storage: ["#3b3530", "#39332e"], generator: ["#32383b", "#303639"], airlock: ["#374044", "#353d41"],
+  medical: ["#423536", "#3f3234"], workshop: ["#423a33", "#3f3730"],
+  additional: ["#27282a", "#252628"], unknownNorth: ["#20272b", "#1e2529"], unknownSouth: ["#111619", "#101518"]
 };
 
 export class IsometricScene {
@@ -144,22 +144,49 @@ export class IsometricScene {
   }
 
   #drawFloor(tile) {
-    const p = this.#iso(tile.x, tile.y); const hw = this.#tileWidth / 2; const hh = this.#tileHeight / 2;
+    const p = this.#iso(tile.x, tile.y);
+    const hw = this.#tileWidth / 2;
+    const hh = this.#tileHeight / 2;
     const corners = [{ x: p.x, y: p.y }, { x: p.x + hw, y: p.y + hh }, { x: p.x, y: p.y + this.#tileHeight }, { x: p.x - hw, y: p.y + hh }];
     this.#polygon(corners, PALETTE[tile.zone][(tile.x + tile.y) & 1]);
-    const ctx = this.#context, seed = tile.x * 31 + tile.y * 17;
-    ctx.save(); ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p.x+hw,p.y+hh); ctx.lineTo(p.x,p.y+this.#tileHeight); ctx.lineTo(p.x-hw,p.y+hh); ctx.clip();
-    // Authored wear pattern replaces the conspicuous checkerboard grid.
-    ctx.globalAlpha = .24; ctx.fillStyle = seed % 3 ? "#101719" : "#7b765b";
-    ctx.fillRect(Math.round(p.x - hw * .52), Math.round(p.y + hh * .65), Math.round(hw * .42), Math.max(1, this.#dpr));
-    ctx.fillRect(Math.round(p.x + hw * .12), Math.round(p.y + hh * .28), Math.round(hw * .19), Math.max(1, this.#dpr));
-    if (seed % 5 === 0) { ctx.fillStyle = "#a18749"; ctx.fillRect(Math.round(p.x - 2*this.#dpr), Math.round(p.y+hh), 4*this.#dpr, this.#dpr); }
-    if (["generator","airlock"].includes(tile.zone)) { ctx.fillStyle="#11191b"; for(let i=-1;i<=1;i++) ctx.fillRect(p.x+i*6*this.#dpr,p.y+hh+i*3*this.#dpr,2*this.#dpr,2*this.#dpr); }
-    if (tile.zone === "living" && seed % 4 === 0) { ctx.fillStyle="#80614a"; ctx.fillRect(p.x-hw*.28,p.y+hh*.62,hw*.56,2*this.#dpr); }
+
+    const ctx = this.#context;
+    const seed = tile.x * 31 + tile.y * 17;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + hw, p.y + hh); ctx.lineTo(p.x, p.y + this.#tileHeight); ctx.lineTo(p.x - hw, p.y + hh);
+    ctx.clip();
+
+    // Keep floor wear broad and low-contrast. Tiny bright pixels made the map look noisy.
+    ctx.globalAlpha = .14;
+    ctx.fillStyle = "#11191b";
+    if (seed % 3 === 0) ctx.fillRect(Math.round(p.x - hw * .48), Math.round(p.y + hh * .7), Math.round(hw * .38), Math.max(1, this.#dpr));
+    if (seed % 4 === 0) ctx.fillRect(Math.round(p.x + hw * .08), Math.round(p.y + hh * .34), Math.round(hw * .24), Math.max(1, this.#dpr));
+    if (["generator", "airlock"].includes(tile.zone) && seed % 2 === 0) {
+      ctx.globalAlpha = .2;
+      ctx.fillStyle = "#151d1f";
+      ctx.fillRect(Math.round(p.x - hw * .18), Math.round(p.y + hh * .7), Math.round(hw * .36), Math.max(1, 2 * this.#dpr));
+    }
+    if (tile.zone === "living" && seed % 5 === 0) {
+      ctx.globalAlpha = .12;
+      ctx.fillStyle = "#62574a";
+      ctx.fillRect(Math.round(p.x - hw * .24), Math.round(p.y + hh * .68), Math.round(hw * .48), Math.max(1, 2 * this.#dpr));
+    }
     ctx.restore();
-    ctx.strokeStyle="rgb(103 116 112 / 18%)"; ctx.lineWidth=Math.max(1,this.#dpr); ctx.beginPath(); ctx.moveTo(p.x-hw,p.y+hh); ctx.lineTo(p.x,p.y+this.#tileHeight); ctx.stroke();
-    if (tile.zone === "central") { ctx.fillStyle = "#8b7b3e"; ctx.fillRect(p.x - 2 * this.#dpr, p.y + hh - this.#dpr, 4 * this.#dpr, 2 * this.#dpr); }
-    if (["medical", "workshop"].includes(tile.zone) && (tile.x * 3 + tile.y) % 7 === 0) { const ctx = this.#context; ctx.strokeStyle = "#8c4f48"; ctx.beginPath(); ctx.moveTo(p.x - hw * .2, p.y + hh * .8); ctx.lineTo(p.x + hw * .18, p.y + hh * 1.2); ctx.stroke(); }
+
+    // A restrained seam preserves the tile structure without turning the floor into a checkerboard.
+    ctx.strokeStyle = "rgb(103 116 112 / 10%)";
+    ctx.lineWidth = Math.max(1, this.#dpr);
+    ctx.beginPath(); ctx.moveTo(p.x - hw, p.y + hh); ctx.lineTo(p.x, p.y + this.#tileHeight); ctx.stroke();
+
+    if (tile.zone === "central" && seed % 3 === 0) {
+      ctx.fillStyle = "rgb(113 124 116 / 16%)";
+      ctx.fillRect(Math.round(p.x - 2 * this.#dpr), Math.round(p.y + hh), 4 * this.#dpr, Math.max(1, this.#dpr));
+    }
+    if (["medical", "workshop"].includes(tile.zone) && (tile.x * 3 + tile.y) % 7 === 0) {
+      ctx.strokeStyle = "rgb(117 73 68 / 55%)";
+      ctx.beginPath(); ctx.moveTo(p.x - hw * .2, p.y + hh * .8); ctx.lineTo(p.x + hw * .18, p.y + hh * 1.2); ctx.stroke();
+    }
   }
 
   #drawSectorEffects(tiles, time) {
@@ -185,8 +212,29 @@ export class IsometricScene {
   }
 
   #drawWalls(tile) {
-    if (!floorAt(this.#map, tile.x, tile.y - 1)) this.#wallFace(tile.x, tile.y, "north");
-    if (!floorAt(this.#map, tile.x - 1, tile.y)) this.#wallFace(tile.x, tile.y, "west");
+    const north = floorAt(this.#map, tile.x, tile.y - 1);
+    const west = floorAt(this.#map, tile.x - 1, tile.y);
+
+    if (!north || (north.zone !== tile.zone && !this.#hasDoorOnEdge(tile.x, tile.y, "north"))) {
+      this.#wallFace(tile.x, tile.y, "north");
+    }
+    if (!west || (west.zone !== tile.zone && !this.#hasDoorOnEdge(tile.x, tile.y, "west"))) {
+      this.#wallFace(tile.x, tile.y, "west");
+    }
+  }
+
+  #hasDoorOnEdge(x, y, orientation) {
+    const opposite = { north: "south", south: "north", east: "west", west: "east" }[orientation];
+    const neighbor = {
+      north: { x, y: y - 1 },
+      south: { x, y: y + 1 },
+      east: { x: x + 1, y },
+      west: { x: x - 1, y }
+    }[orientation];
+    return this.#map.doors.some((door) =>
+      (door.x === x && door.y === y && door.orientation === orientation)
+      || (door.x === neighbor.x && door.y === neighbor.y && door.orientation === opposite)
+    );
   }
 
   #wallFace(x, y, side) {
@@ -207,12 +255,13 @@ export class IsometricScene {
     const p = this.#iso(item.x + .5, item.y + .5);
     if (item.kind === "generator") p.y += Math.sin(this.#sceneTime * 12 + item.x) * .7 * this.#dpr;
     const sprite = this.#sprites.object(item.kind, Math.floor(this.#sceneTime * 4));
-    const scale = Math.max(1, Math.round(this.#tileWidth / 48));
+    const scale = Math.max(this.#dpr, Math.round(this.#tileWidth / (64 * this.#dpr)) * this.#dpr);
     const width = sprite.width * scale, height = sprite.height * scale;
     const ctx = this.#context;
-    ctx.save(); ctx.imageSmoothingEnabled=false;
-    ctx.fillStyle="rgb(0 0 0 / 45%)"; ctx.beginPath(); ctx.ellipse(p.x,p.y+this.#tileHeight*.33,this.#tileWidth*.3,this.#tileHeight*.15,0,0,Math.PI*2); ctx.fill();
-    ctx.drawImage(sprite, Math.round(p.x-width/2), Math.round(p.y-height+this.#tileHeight*.38), width, height);
+    ctx.save(); ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = "rgb(0 0 0 / 38%)";
+    ctx.beginPath(); ctx.ellipse(p.x, p.y + this.#tileHeight * .36, this.#tileWidth * .24, this.#tileHeight * .1, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.drawImage(sprite, Math.round(p.x - width / 2), Math.round(p.y - height + this.#tileHeight * .4), width, height);
     ctx.restore();
   }
 
@@ -229,8 +278,21 @@ export class IsometricScene {
   }
 
   #drawDecoration(item) {
-    const p = this.#iso(item.x, item.y, .03), ctx = this.#context, s = this.#dpr;
-    ctx.save(); ctx.translate(p.x, p.y);
+    const p = this.#iso(item.x, item.y);
+    const ctx = this.#context;
+    const s = this.#dpr;
+    const wallMounted = ["sign", "wallpanel", "vent", "lamp"].includes(item.kind);
+    const castsShadow = ["table", "cabinet", "shelf", "bench", "stool"].includes(item.kind);
+    const anchorY = p.y + this.#tileHeight * (wallMounted ? .08 : .38);
+
+    ctx.save();
+    if (castsShadow) {
+      ctx.fillStyle = "rgb(0 0 0 / 30%)";
+      ctx.beginPath();
+      ctx.ellipse(p.x, anchorY + 2 * s, this.#tileWidth * .18, this.#tileHeight * .07, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.translate(p.x, anchorY);
     if (item.kind === "pipe" || item.kind === "cable") {
       ctx.strokeStyle = item.kind === "pipe" ? "#667477" : "#8a6545";
       ctx.lineWidth = (item.kind === "pipe" ? 3 : 1.5) * s;
@@ -319,14 +381,15 @@ export class IsometricScene {
   }
 
   #drawDoor(item, sealed) {
-    const p = this.#iso(item.x + .5, item.y + .5, .08);
+    const p = this.#iso(item.x + .5, item.y + .5);
     const ctx = this.#context;
+    const groundY = p.y + this.#tileHeight * .48;
     const progress = sealed ? 0 : Math.max(0, Math.min(1, item.progress ?? (item.open ? 1 : 0)));
     const hermetic = item.visualStyle === "hermetic";
-    const totalWidth = this.#tileWidth * (hermetic ? .88 : .66);
-    const frameHeight = (hermetic ? 30 : 22) * this.#dpr;
-    const postWidth = (hermetic ? 6 : 3) * this.#dpr;
-    const beamHeight = (hermetic ? 6 : 4) * this.#dpr;
+    const totalWidth = this.#tileWidth * (hermetic ? .88 : .64);
+    const frameHeight = (hermetic ? 48 : 38) * this.#dpr;
+    const postWidth = (hermetic ? 6 : 4) * this.#dpr;
+    const beamHeight = (hermetic ? 7 : 5) * this.#dpr;
     const sillHeight = (hermetic ? 4 : 2) * this.#dpr;
     const innerWidth = totalWidth - postWidth * 2;
     const innerTop = -frameHeight + beamHeight;
@@ -335,7 +398,7 @@ export class IsometricScene {
     const jammed = item.state === "jammed";
 
     ctx.save();
-    ctx.translate(p.x, p.y);
+    ctx.translate(p.x, groundY);
     ctx.transform(1, ["north", "south"].includes(item.orientation) ? .5 : -.5, 0, 1, 0, 0);
 
     // Threshold and portal frame make room transitions read as actual doorways.
@@ -428,11 +491,15 @@ export class IsometricScene {
     const phase = Math.floor(player.animationTime * 8) % 4;
     const direction = player.direction ?? "south-east";
     const sprite = this.#sprites.character({ hero:true, direction, frame: walking ? phase : 0 });
-    const scale=Math.max(1,Math.round(this.#tileWidth/32));
-    const w=sprite.width*scale,h=sprite.height*scale, footY=p.y+this.#tileHeight*.4;
-    ctx.save(); ctx.imageSmoothingEnabled=false;
-    ctx.fillStyle="rgb(0 0 0 / 52%)"; ctx.beginPath(); ctx.ellipse(p.x,footY,this.#tileWidth*.22,this.#tileHeight*.11,0,0,Math.PI*2); ctx.fill();
-    ctx.drawImage(sprite,Math.round(p.x-w/2),Math.round(footY-h),w,h); ctx.restore();
+    const scale = Math.max(this.#dpr, Math.round(this.#tileWidth / (48 * this.#dpr)) * this.#dpr);
+    const w = sprite.width * scale;
+    const h = sprite.height * scale;
+    const footY = p.y + this.#tileHeight * .4;
+    ctx.save(); ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = "rgb(0 0 0 / 42%)";
+    ctx.beginPath(); ctx.ellipse(p.x, footY, this.#tileWidth * .16, this.#tileHeight * .075, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.drawImage(sprite, Math.round(p.x - w / 2), Math.round(footY - h), w, h);
+    ctx.restore();
   }
 
   #drawNpc(npc) {
@@ -441,10 +508,15 @@ export class IsometricScene {
     const sitting = npc.activity === "sit";
     const walking = npc.activity === "walk";
     const phase = Math.floor(npc.animationTime * 7) % 4;
-    const sprite=this.#sprites.character({color:npc.color,profession:npc.profession,direction:npc.direction??"south",frame:walking?phase:0,sitting,working:npc.activity==="work"});
-    const scale=Math.max(1,Math.round(this.#tileWidth/36)),w=sprite.width*scale,h=sprite.height*scale,footY=p.y+this.#tileHeight*.38;
-    ctx.save(); ctx.imageSmoothingEnabled=false; ctx.fillStyle="rgb(0 0 0 / 43%)"; ctx.beginPath(); ctx.ellipse(p.x,footY,this.#tileWidth*.18,this.#tileHeight*.09,0,0,Math.PI*2); ctx.fill();
-    ctx.drawImage(sprite,Math.round(p.x-w/2),Math.round(footY-h+(sitting?5*scale:0)),w,h);
+    const sprite = this.#sprites.character({ color:npc.color, profession:npc.profession, direction:npc.direction ?? "south", frame:walking ? phase : 0, sitting, working:npc.activity === "work" });
+    const scale = Math.max(this.#dpr, Math.round(this.#tileWidth / (50 * this.#dpr)) * this.#dpr);
+    const w = sprite.width * scale;
+    const h = sprite.height * scale;
+    const footY = p.y + this.#tileHeight * .38;
+    ctx.save(); ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = "rgb(0 0 0 / 36%)";
+    ctx.beginPath(); ctx.ellipse(p.x, footY, this.#tileWidth * .145, this.#tileHeight * .065, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.drawImage(sprite, Math.round(p.x - w / 2), Math.round(footY - h + (sitting ? 5 * scale : 0)), w, h);
     if (npc.activity === "chat") {
       ctx.fillStyle = "#d7dfca"; ctx.fillRect(p.x+8*scale,footY-h-5*scale,10*scale,6*scale);
       ctx.fillStyle = "#394443"; ctx.fillRect(p.x+11*scale,footY-h-3*scale,scale,scale); ctx.fillRect(p.x+14*scale,footY-h-3*scale,scale,scale);
@@ -453,9 +525,14 @@ export class IsometricScene {
   }
 
   #drawLabel(label) {
-    const p = this.#iso(label.x, label.y, .03), ctx = this.#context;
-    const status = label.sector ? this.#sectorStates.get(label.sector)?.status : null;
-    const text = status ? `${label.text} · ${status}` : label.text;
-    ctx.font = `bold ${Math.max(7, 7 * this.#dpr)}px "Courier New", monospace`; ctx.textAlign = "center"; ctx.fillStyle = "rgb(215 223 202 / 72%)"; ctx.fillText(text, p.x, p.y);
+    const p = this.#iso(label.x, label.y);
+    const ctx = this.#context;
+    ctx.save();
+    ctx.globalAlpha = .3;
+    ctx.font = `bold ${Math.max(6, 6 * this.#dpr)}px "Courier New", monospace`;
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#aab4aa";
+    ctx.fillText(label.text, Math.round(p.x), Math.round(p.y + this.#tileHeight * .42));
+    ctx.restore();
   }
 }
