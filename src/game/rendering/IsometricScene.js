@@ -525,9 +525,14 @@ export class IsometricScene {
   }
 
   #drawLabel(label) {
-    const p = this.#iso(label.x, label.y, .03), ctx = this.#context;
-    const status = label.sector ? this.#sectorStates.get(label.sector)?.status : null;
-    const text = status ? `${label.text} · ${status}` : label.text;
-    ctx.font = `bold ${Math.max(7, 7 * this.#dpr)}px "Courier New", monospace`; ctx.textAlign = "center"; ctx.fillStyle = "rgb(215 223 202 / 72%)"; ctx.fillText(text, p.x, p.y);
+    const p = this.#iso(label.x, label.y);
+    const ctx = this.#context;
+    ctx.save();
+    ctx.globalAlpha = .3;
+    ctx.font = `bold ${Math.max(6, 6 * this.#dpr)}px "Courier New", monospace`;
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#aab4aa";
+    ctx.fillText(label.text, Math.round(p.x), Math.round(p.y + this.#tileHeight * .42));
+    ctx.restore();
   }
 }
