@@ -93,7 +93,7 @@ export const shelterMap = Object.freeze({
     { id: "workshop-screen", type: "equipment", sectorId: "workshop", visibleWhen: ["ACTIVE"], x: 22, y: 6, kind: "screen" },
     { id: "workshop-station", type: "equipment", sectorId: "workshop", visibleWhen: ["ACTIVE"], x: 20, y: 6, kind: "workstation" },
     { id: "decon-unit", type: "equipment", x: 25, y: 8, kind: "decon" },
-    { id: "airlock-container", type: "container", x: 26, y: 12, kind: "crate" },
+    { id: "airlock-container", type: "container", x: 26, y: 12, kind: "crate", loot: [{ resourceId: "mechanicalComponent", amount: 1 }] },
     { id: "expedition-console", type: "expedition", x: 27, y: 8, kind: "airlockPanel" },
     { id: "airlock-compressor", type: "equipment", x: 25, y: 12, kind: "compressor" },
     { id: "airlock-beacon-a", x: 27, y: 10, kind: "beacon" },
