@@ -52,17 +52,19 @@ test("container loot can only be collected once", () => {
   const map = createMap();
   const system = new InteractionSystem(map, new DoorSystem(map.doors));
   const crate = map.obstacles.find(({ id }) => id === "crate");
-  const world = {};
+  const world = { interacted: { crate: 3 } };
 
   const first = system.interact(crate, world);
   assert.equal(first.actionPerformed, true);
-  assert.equal(first.firstInteraction, true);
+  assert.equal(first.firstInteraction, false);
+  assert.equal(first.lootCollected, true);
   assert.deepEqual(first.loot, [{ resourceId: "electronicComponents", amount: 2 }]);
+  assert.equal(world.looted.crate, true);
 
   const second = system.interact(crate, world);
   assert.equal(second.actionPerformed, false);
-  assert.equal(second.firstInteraction, false);
+  assert.equal(second.lootCollected, false);
   assert.deepEqual(second.loot, []);
   assert.equal(second.message, "Контейнер пуст");
-  assert.equal(world.interacted.crate, 2);
+  assert.equal(world.interacted.crate, 5);
 });
