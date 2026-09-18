@@ -1,5 +1,5 @@
 const SAVE_VERSION = 2;
-import { createInitialInventory, resourceById } from "../resources/ResourceCatalog.js";
+import { createInitialInventory } from "../resources/ResourceCatalog.js";
 import { EXPEDITION_UNAVAILABLE_MESSAGE } from "../interaction/Messages.js";
 
 export class GameCore {
@@ -137,32 +137,10 @@ export class GameCore {
       this.#state.interaction.lastResultAt = player.animationTime;
       const sectorId = result?.sectorId;
       if (sectorId && this.#repairs.isRepairable(sectorId)) this.#showRepairPanel(sectorId);
-      if (result?.type === "container") this.#applyContainerLoot(result);
       if (result?.type === "expedition") this.#statusToast.show(EXPEDITION_UNAVAILABLE_MESSAGE);
     }
   }
 
-  #applyContainerLoot(result) {
-    const loot = result?.loot ?? [];
-    if (!loot.length) {
-      if (result?.message) this.#statusToast.show(result.message);
-      return;
-    }
-
-    const found = [];
-    for (const { resourceId, amount } of loot) {
-      const value = Math.max(0, Number(amount) || 0);
-      if (!value) continue;
-      this.#state.resources[resourceId] = (this.#state.resources[resourceId] ?? 0) + value;
-      found.push(`${resourceById(resourceId)?.name ?? resourceId} +${value}`);
-    }
-
-    if (found.length) {
-      this.#resourceHud.render(this.#state.resources, this.#state.population?.count ?? null);
-      this.#statusToast.show(`НАЙДЕНО: ${found.join(" · ")}`);
-      void this.save();
-    }
-  }
 
   #showRepairPanel(sectorId) {
     const refresh = () => {
