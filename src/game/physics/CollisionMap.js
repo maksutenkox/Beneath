@@ -28,12 +28,21 @@ export class CollisionMap {
   canCross(fromX, fromY, toX, toY) {
     if (!this.isWalkable(fromX, fromY) || !this.isWalkable(toX, toY)) return false;
     if (Math.abs(toX - fromX) + Math.abs(toY - fromY) !== 1) return false;
+
+    const fromFloor = floorAt(this.map, fromX, fromY);
+    const toFloor = floorAt(this.map, toX, toY);
     const orientation = toX > fromX ? "east" : toX < fromX ? "west" : toY > fromY ? "south" : "north";
     const opposite = { north: "south", south: "north", east: "west", west: "east" }[orientation];
     const crosses = (edge) => (edge.x === fromX && edge.y === fromY && edge.orientation === orientation)
       || (edge.x === toX && edge.y === toY && edge.orientation === opposite);
-    const closedDoor = this.map.doors.some((door) => crosses(door) && door.collision);
+
+    const crossingDoor = this.map.doors.find(crosses);
     const sealed = this.map.blockedPassages.some(crosses);
-    return !closedDoor && !sealed;
+    if (sealed) return false;
+
+    // Different shelter sectors are separated by real partitions. Movement between
+    // them must go through an authored doorway instead of slipping through the wall.
+    if (fromFloor?.sector !== toFloor?.sector && !crossingDoor) return false;
+    return !crossingDoor?.collision;
   }
 }
