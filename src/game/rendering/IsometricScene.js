@@ -36,8 +36,9 @@ export class IsometricScene {
       this.#canvas.width = width; this.#canvas.height = height; this.#context.imageSmoothingEnabled = false;
     }
     const shortSide = Math.min(width, height);
-    // Fixed 2:1 isometric grid, snapped to a 4px step to keep every sprite crisp.
-    this.#tileWidth = Math.round(Math.max(48 * this.#dpr, Math.min(68 * this.#dpr, shortSide * .15)) / (4 * this.#dpr)) * 4 * this.#dpr;
+    // Closer gameplay framing: enough context to read a room, but no longer a whole-map overview.
+    // Keep the 2:1 grid snapped to a 4px step so pixel art stays crisp while the camera follows.
+    this.#tileWidth = Math.round(Math.max(64 * this.#dpr, Math.min(92 * this.#dpr, shortSide * .19)) / (4 * this.#dpr)) * 4 * this.#dpr;
     this.#tileHeight = this.#tileWidth / 2;
   }
 
@@ -281,9 +282,10 @@ export class IsometricScene {
     const p = this.#iso(item.x, item.y);
     const ctx = this.#context;
     const s = this.#dpr;
-    const wallMounted = ["sign", "wallpanel", "vent", "lamp"].includes(item.kind);
     const castsShadow = ["table", "cabinet", "shelf", "bench", "stool"].includes(item.kind);
-    const anchorY = p.y + this.#tileHeight * (wallMounted ? .08 : .38);
+    // Only floor-standing furniture needs a lowered contact point. Small decals/effects keep
+    // their authored coordinates so they do not drift after the grounding pass.
+    const anchorY = p.y + this.#tileHeight * (castsShadow ? .34 : 0);
 
     ctx.save();
     if (castsShadow) {
@@ -381,9 +383,15 @@ export class IsometricScene {
   }
 
   #drawDoor(item, sealed) {
-    const p = this.#iso(item.x + .5, item.y + .5);
+    const edgePoint = {
+      north: { x: item.x + .5, y: item.y },
+      south: { x: item.x + .5, y: item.y + 1 },
+      west: { x: item.x, y: item.y + .5 },
+      east: { x: item.x + 1, y: item.y + .5 }
+    }[item.orientation] ?? { x: item.x + .5, y: item.y + .5 };
+    const p = this.#iso(edgePoint.x, edgePoint.y);
     const ctx = this.#context;
-    const groundY = p.y + this.#tileHeight * .48;
+    const groundY = p.y;
     const progress = sealed ? 0 : Math.max(0, Math.min(1, item.progress ?? (item.open ? 1 : 0)));
     const hermetic = item.visualStyle === "hermetic";
     const totalWidth = this.#tileWidth * (hermetic ? .88 : .64);
