@@ -47,3 +47,23 @@ test("blocked doors report that no action was performed", () => {
   assert.equal(result.actionPerformed, false);
   assert.equal(map.doors[0].state, "locked");
 });
+
+
+test("interaction availability reflects door state without affecting other targets", () => {
+  const map = createMap();
+  const doors = new DoorSystem(map.doors);
+  const system = new InteractionSystem(map, doors);
+
+  assert.equal(system.canInteract(map.doors[0]), true);
+  assert.equal(system.canInteract(map.obstacles[0]), true);
+
+  map.doors[0].state = "locked";
+  assert.equal(system.canInteract(map.doors[0]), false);
+
+  map.doors[0].state = "jammed";
+  assert.equal(system.canInteract(map.doors[0]), false);
+
+  map.doors[0].state = "closed";
+  map.doors[0].doorKind = "automatic";
+  assert.equal(system.canInteract(map.doors[0]), false);
+});

@@ -126,9 +126,10 @@ export class GameCore {
     this.#state.world ??= { interacted: {} };
     this.#state.interaction ??= { targetId: null, lastResult: null };
     const target = this.#interactions.nearest(player, this.#state.npcs);
+    const actionAvailable = this.#interactions.canInteract(target);
     this.#state.interaction.targetId = target?.id ?? null;
-    this.#input.setInteractionAvailable(Boolean(target), this.#interactions.label(target));
-    if (this.#input.consumeInteraction()) {
+    this.#input.setInteractionAvailable(actionAvailable, this.#interactions.label(target));
+    if (this.#input.consumeInteraction() && actionAvailable) {
       const result = this.#interactions.interact(target, this.#state.world);
       this.#state.interaction.lastResult = result;
       if (result?.actionPerformed !== false) {

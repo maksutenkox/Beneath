@@ -37,6 +37,13 @@ export class InteractionSystem {
     return LABELS[target.type] ?? "Взаимодействовать";
   }
 
+  canInteract(target) {
+    if (!target) return false;
+    if (target.type !== "door" && target.type !== "airlock") return true;
+    if (target.doorKind === "automatic") return false;
+    return !["locked", "jammed"].includes(target.state);
+  }
+
   interact(target, worldState) {
     if (!target) return null;
     let actionPerformed = true;
