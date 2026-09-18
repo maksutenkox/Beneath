@@ -17,3 +17,22 @@ test("camera target remains inside map boundaries", () => {
   assert.equal(camera.x, .5);
   assert.equal(camera.y, 15.5);
 });
+
+
+test("camera develops a small look-ahead in the movement direction", () => {
+  const controller = new CameraController({ width: 30, height: 22, followSpeed: 7, lookAhead: .65, lookAheadSpeed: 6 });
+  const camera = controller.initialize({ x: 10, y: 10 });
+  controller.update(camera, { x: 10.2, y: 10 }, 1 / 60);
+  assert.ok(camera.lookAheadX > 0);
+  assert.ok(Math.abs(camera.lookAheadY) < 0.001);
+  assert.ok(camera.lookAheadX <= .65);
+});
+
+test("camera look-ahead relaxes back toward the player when movement stops", () => {
+  const controller = new CameraController({ width: 30, height: 22, lookAheadSpeed: 10 });
+  const camera = controller.initialize({ x: 10, y: 10 });
+  controller.update(camera, { x: 10.2, y: 10 }, 1 / 60);
+  const movingLookAhead = camera.lookAheadX;
+  controller.update(camera, { x: 10.2, y: 10 }, .2);
+  assert.ok(camera.lookAheadX < movingLookAhead);
+});
