@@ -538,97 +538,157 @@ export class IsometricScene {
       west: { x: item.x, y: item.y + .5 },
       east: { x: item.x + 1, y: item.y + .5 }
     }[item.orientation] ?? { x: item.x + .5, y: item.y + .5 };
+
     const p = this.#iso(edgePoint.x, edgePoint.y);
     const ctx = this.#context;
-    const groundY = p.y;
     const progress = sealed ? 0 : Math.max(0, Math.min(1, item.progress ?? (item.open ? 1 : 0)));
     const hermetic = item.visualStyle === "hermetic";
-    const totalWidth = this.#tileWidth * (hermetic ? .88 : .64);
-    const frameHeight = (hermetic ? 48 : 38) * this.#dpr;
-    const postWidth = (hermetic ? 6 : 4) * this.#dpr;
-    const beamHeight = (hermetic ? 7 : 5) * this.#dpr;
-    const sillHeight = (hermetic ? 4 : 2) * this.#dpr;
+    const totalWidth = this.#tileWidth * (hermetic ? .92 : .7);
+    const frameHeight = (hermetic ? 52 : 42) * this.#dpr;
+    const postWidth = (hermetic ? 7 : 5) * this.#dpr;
+    const beamHeight = (hermetic ? 8 : 6) * this.#dpr;
+    const sillHeight = (hermetic ? 5 : 3) * this.#dpr;
     const innerWidth = totalWidth - postWidth * 2;
     const innerTop = -frameHeight + beamHeight;
     const innerHeight = frameHeight - beamHeight - sillHeight;
     const locked = item.state === "locked";
     const jammed = item.state === "jammed";
+    const tilt = ["north", "south"].includes(item.orientation) ? .5 : -.5;
 
     ctx.save();
-    ctx.translate(p.x, groundY);
-    ctx.transform(1, ["north", "south"].includes(item.orientation) ? .5 : -.5, 0, 1, 0, 0);
+    ctx.translate(p.x, p.y);
 
-    // Threshold and portal frame make room transitions read as actual doorways.
-    ctx.fillStyle = "#171e20";
-    ctx.fillRect(-totalWidth / 2 - 2 * this.#dpr, -sillHeight, totalWidth + 4 * this.#dpr, sillHeight + 2 * this.#dpr);
-    ctx.fillStyle = hermetic ? "#48575b" : "#505d5d";
+    // Contact shadow and threshold are drawn before the vertical frame so the portal sits in the wall.
+    ctx.save();
+    ctx.transform(1, tilt, 0, 1, 0, 0);
+    ctx.fillStyle = "rgb(0 0 0 / 34%)";
+    ctx.fillRect(-totalWidth * .55, -1 * this.#dpr, totalWidth * 1.1, 6 * this.#dpr);
+    ctx.fillStyle = hermetic ? "#252e31" : "#293335";
+    ctx.fillRect(-totalWidth / 2, -sillHeight, totalWidth, sillHeight);
+    ctx.fillStyle = "#12191b";
+    ctx.fillRect(-innerWidth / 2, -2 * this.#dpr, innerWidth, 2 * this.#dpr);
+    ctx.restore();
+
+    ctx.transform(1, tilt, 0, 1, 0, 0);
+
+    // Structural frame: dark recess behind a brighter metal shell.
+    ctx.fillStyle = "#151d1f";
+    ctx.fillRect(-totalWidth / 2 - 2 * this.#dpr, -frameHeight - 2 * this.#dpr, totalWidth + 4 * this.#dpr, frameHeight + 2 * this.#dpr);
+
+    ctx.fillStyle = hermetic ? "#536267" : "#505c5e";
     ctx.fillRect(-totalWidth / 2, -frameHeight, postWidth, frameHeight);
     ctx.fillRect(totalWidth / 2 - postWidth, -frameHeight, postWidth, frameHeight);
     ctx.fillRect(-totalWidth / 2, -frameHeight, totalWidth, beamHeight);
-    ctx.fillStyle = hermetic ? "#273235" : "#2d3839";
-    ctx.fillRect(-totalWidth / 2 + this.#dpr, -frameHeight + this.#dpr, totalWidth - 2 * this.#dpr, 2 * this.#dpr);
 
-    // Door leaf animation is clipped inside the frame instead of shrinking like a floor bar.
+    // Header track/motor housing makes normal doors read as sliding industrial doors.
+    ctx.fillStyle = hermetic ? "#303b3f" : "#303a3b";
+    ctx.fillRect(-innerWidth / 2, -frameHeight + 2 * this.#dpr, innerWidth, 3 * this.#dpr);
+    ctx.fillStyle = "#1c2527";
+    ctx.fillRect(-innerWidth * .38, -frameHeight - 4 * this.#dpr, innerWidth * .76, 4 * this.#dpr);
+
+    // Moving leaf/leafs remain clipped inside the portal.
     ctx.save();
     ctx.beginPath();
     ctx.rect(-innerWidth / 2, innerTop, innerWidth, innerHeight);
     ctx.clip();
 
-    const panel = locked ? "#6e4643" : jammed ? "#71523d" : hermetic ? "#5d696d" : "#66706d";
+    const panel = locked ? "#65433f" : jammed ? "#6b4f3d" : hermetic ? "#58666a" : "#5e6967";
     if (hermetic) {
       const half = innerWidth / 2;
       const shift = progress * half;
       ctx.fillStyle = panel;
       ctx.fillRect(-innerWidth / 2 - shift, innerTop, half + 1, innerHeight);
       ctx.fillRect(shift, innerTop, half + 1, innerHeight);
-      ctx.fillStyle = "#20292b";
+
+      ctx.fillStyle = "#2c373a";
+      ctx.fillRect(-innerWidth / 2 + 4 * this.#dpr - shift, innerTop + 4 * this.#dpr, half - 8 * this.#dpr, 4 * this.#dpr);
+      ctx.fillRect(shift + 4 * this.#dpr, innerTop + innerHeight - 8 * this.#dpr, half - 8 * this.#dpr, 4 * this.#dpr);
+
+      ctx.strokeStyle = "rgb(24 32 34 / 82%)";
+      ctx.lineWidth = 2 * this.#dpr;
+      ctx.beginPath();
+      ctx.moveTo(-innerWidth * .42 - shift, innerTop + innerHeight * .22);
+      ctx.lineTo(-innerWidth * .08 - shift, innerTop + innerHeight * .78);
+      ctx.moveTo(innerWidth * .42 + shift, innerTop + innerHeight * .22);
+      ctx.lineTo(innerWidth * .08 + shift, innerTop + innerHeight * .78);
+      ctx.stroke();
+
+      ctx.fillStyle = "#1a2325";
       ctx.fillRect(-2 * this.#dpr - shift, innerTop, 4 * this.#dpr, innerHeight);
       ctx.fillRect(shift - 2 * this.#dpr, innerTop, 4 * this.#dpr, innerHeight);
     } else {
       const shift = progress * innerWidth;
+      const leafX = -innerWidth / 2 - shift;
       ctx.fillStyle = panel;
-      ctx.fillRect(-innerWidth / 2 - shift, innerTop, innerWidth, innerHeight);
-      ctx.fillStyle = "#303a39";
-      ctx.fillRect(-innerWidth / 2 + 4 * this.#dpr - shift, innerTop + 4 * this.#dpr, 2 * this.#dpr, innerHeight - 8 * this.#dpr);
-      ctx.fillStyle = "#9aa08a";
-      ctx.fillRect(innerWidth * .24 - shift, innerTop + innerHeight * .52, 4 * this.#dpr, 2 * this.#dpr);
+      ctx.fillRect(leafX, innerTop, innerWidth, innerHeight);
+
+      // Recessed service panel and strengthening ribs.
+      ctx.fillStyle = "#3c4848";
+      ctx.fillRect(leafX + 5 * this.#dpr, innerTop + 5 * this.#dpr, innerWidth - 10 * this.#dpr, 4 * this.#dpr);
+      ctx.fillRect(leafX + 5 * this.#dpr, innerTop + innerHeight - 9 * this.#dpr, innerWidth - 10 * this.#dpr, 4 * this.#dpr);
+
+      ctx.strokeStyle = "rgb(29 38 39 / 78%)";
+      ctx.lineWidth = this.#dpr;
+      ctx.beginPath();
+      ctx.moveTo(leafX + innerWidth * .32, innerTop + 9 * this.#dpr);
+      ctx.lineTo(leafX + innerWidth * .32, innerTop + innerHeight - 9 * this.#dpr);
+      ctx.moveTo(leafX + innerWidth * .68, innerTop + 9 * this.#dpr);
+      ctx.lineTo(leafX + innerWidth * .68, innerTop + innerHeight - 9 * this.#dpr);
+      ctx.stroke();
+
+      // Small recessed handle rather than a bright floating pixel.
+      ctx.fillStyle = "#222c2d";
+      ctx.fillRect(leafX + innerWidth * .76, innerTop + innerHeight * .48, 6 * this.#dpr, 5 * this.#dpr);
+      ctx.fillStyle = "#89918a";
+      ctx.fillRect(leafX + innerWidth * .76 + this.#dpr, innerTop + innerHeight * .48 + this.#dpr, 3 * this.#dpr, this.#dpr);
     }
 
-    // Panel seams and damage stay readable at gameplay scale.
-    ctx.strokeStyle = "rgb(28 36 37 / 80%)";
-    ctx.lineWidth = this.#dpr;
-    for (let y = innerTop + 6 * this.#dpr; y < innerTop + innerHeight; y += 8 * this.#dpr) {
-      ctx.beginPath(); ctx.moveTo(-innerWidth / 2, y); ctx.lineTo(innerWidth / 2, y); ctx.stroke();
-    }
     if (item.doorKind === "damaged") {
-      ctx.strokeStyle = "#2b211f";
+      ctx.strokeStyle = "#241d1c";
       ctx.lineWidth = 2 * this.#dpr;
       ctx.beginPath();
-      ctx.moveTo(-innerWidth * .28, innerTop + innerHeight * .2);
-      ctx.lineTo(innerWidth * .04, innerTop + innerHeight * .58);
-      ctx.lineTo(innerWidth * .26, innerTop + innerHeight * .3);
+      ctx.moveTo(-innerWidth * .3, innerTop + innerHeight * .18);
+      ctx.lineTo(innerWidth * .02, innerTop + innerHeight * .58);
+      ctx.lineTo(innerWidth * .27, innerTop + innerHeight * .34);
       ctx.stroke();
     }
     ctx.restore();
 
-    // State light lives on the frame, not on the moving door leaf.
-    const indicator = locked ? "#c85d4d" : jammed ? "#d08a45" : "#8faf74";
-    ctx.fillStyle = "#1a2223";
-    ctx.fillRect(totalWidth / 2 + this.#dpr, -frameHeight + 7 * this.#dpr, 5 * this.#dpr, 8 * this.#dpr);
+    // Side control box is mounted into the frame and carries the state light.
+    const indicator = locked ? "#b5574b" : jammed ? "#b77a43" : "#73936d";
+    ctx.fillStyle = "#20292b";
+    ctx.fillRect(totalWidth / 2 + this.#dpr, -frameHeight + 10 * this.#dpr, 7 * this.#dpr, 11 * this.#dpr);
+    ctx.fillStyle = "#101719";
+    ctx.fillRect(totalWidth / 2 + 2 * this.#dpr, -frameHeight + 11 * this.#dpr, 5 * this.#dpr, 7 * this.#dpr);
     ctx.fillStyle = indicator;
-    ctx.fillRect(totalWidth / 2 + 2 * this.#dpr, -frameHeight + 8 * this.#dpr, 3 * this.#dpr, 3 * this.#dpr);
+    ctx.fillRect(totalWidth / 2 + 3 * this.#dpr, -frameHeight + 12 * this.#dpr, 3 * this.#dpr, 2 * this.#dpr);
 
     if (hermetic) {
-      // Only the external exit gets the unmistakable heavy pressure-door treatment.
-      ctx.strokeStyle = "#8b7952";
-      ctx.lineWidth = 2 * this.#dpr;
-      ctx.strokeRect(-totalWidth / 2 - 2 * this.#dpr, -frameHeight - 2 * this.#dpr, totalWidth + 4 * this.#dpr, frameHeight + 3 * this.#dpr);
-      ctx.fillStyle = "#b08b3f";
-      for (const x of [-.36, .36]) ctx.fillRect(x * totalWidth - 2 * this.#dpr, -frameHeight - 4 * this.#dpr, 4 * this.#dpr, 3 * this.#dpr);
+      // Only the external exit gets the thick pressure-frame and central locking boss.
+      ctx.strokeStyle = "#766d58";
+      ctx.lineWidth = 3 * this.#dpr;
+      ctx.strokeRect(
+        -totalWidth / 2 - 3 * this.#dpr,
+        -frameHeight - 3 * this.#dpr,
+        totalWidth + 6 * this.#dpr,
+        frameHeight + 4 * this.#dpr
+      );
+      ctx.fillStyle = "#2a3437";
+      ctx.beginPath();
+      ctx.arc(0, innerTop + innerHeight * .5, 5 * this.#dpr, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#6d756d";
+      ctx.lineWidth = this.#dpr;
+      ctx.beginPath();
+      ctx.moveTo(-5 * this.#dpr, innerTop + innerHeight * .5);
+      ctx.lineTo(5 * this.#dpr, innerTop + innerHeight * .5);
+      ctx.moveTo(0, innerTop + innerHeight * .5 - 5 * this.#dpr);
+      ctx.lineTo(0, innerTop + innerHeight * .5 + 5 * this.#dpr);
+      ctx.stroke();
     }
 
     if (sealed) {
-      ctx.strokeStyle = "#8b6040";
+      ctx.strokeStyle = "#765344";
       ctx.lineWidth = 4 * this.#dpr;
       ctx.beginPath();
       ctx.moveTo(-innerWidth * .42, innerTop + innerHeight * .18);
