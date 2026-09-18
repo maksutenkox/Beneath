@@ -14,3 +14,19 @@ test("each major zone has its own decoration set", () => {
     assert.ok(shelterMap.decorations.filter((item) => item.zone === zone).length >= 3, `${zone} needs detail`);
   }
 });
+
+
+test("rooms use neutral furnishing details without defining story loot", () => {
+  const decorationKinds = new Set(shelterMap.decorations.map(({ kind }) => kind));
+  for (const kind of ["shelf", "bench", "stool", "wallpanel"]) assert.ok(decorationKinds.has(kind));
+  assert.equal(shelterMap.obstacles.some(({ loot }) => Array.isArray(loot) && loot.length > 0), false);
+});
+
+test("only the external exit uses the hermetic visual style", () => {
+  const hermeticDoors = shelterMap.doors.filter(({ visualStyle }) => visualStyle === "hermetic");
+  assert.equal(hermeticDoors.length, 1);
+  assert.equal(hermeticDoors[0].id, "airlock-outer");
+  for (const door of shelterMap.doors.filter(({ id }) => id !== "airlock-outer")) {
+    assert.equal(door.visualStyle, "metal");
+  }
+});
