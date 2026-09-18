@@ -6,7 +6,8 @@ import { CharacterSpriteSheet } from '../src/game/rendering/CharacterSpriteSheet
 for (const [path,width,height] of [
   ['characters/heroine/heroine.png',768,640],
   ['characters/residents/npc.png',384,640],
-  ['environment/props.png',384,384]
+  ['environment/props.png',384,384],
+  ['environment/details/details.png',384,384]
 ]) test(`published atlas ${path} has expected dimensions and transparency`,()=>{
   const png=readFileSync(new URL(`../src/game/assets/${path}`,import.meta.url));
   assert.equal(png.readUInt32BE(16),width);

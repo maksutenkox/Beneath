@@ -7,7 +7,9 @@ async function main() {
   const { data, info } = await sharp(source).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   for (let i = 0; i < data.length; i += 4) {
     const r = data[i], g = data[i + 1], b = data[i + 2];
-    const background = mode === 'reference'
+    const background = mode === 'details'
+      ? Math.min(r,g,b) > 165 && Math.max(r,g,b)-Math.min(r,g,b) < 10
+      : mode === 'reference'
       ? r < 45 && g < 49 && b < 50 && g >= r * .93 && b >= r * .93
       : mode === 'hero'
       ? Math.min(r,g,b) > 165 && Math.max(r,g,b)-Math.min(r,g,b) < 18
@@ -58,9 +60,12 @@ async function main() {
     }
     await sharp({create:{width:768,height:640,channels:4,background:'#00000000'}}).composite(pieces).png().toFile(path.join(destination,'heroine.png'));
   } else {
-    const propNames=['bed','crate','locker','generator','terminal','decon','damaged','rubble','wire','screen','workstation','airlockPanel','compressor','beacon','table','vent'];
-    const cols=mode==='props'?4:6, rows=mode==='props'?4:8;
-    const targetWidth=mode==='props'?96:64, targetHeight=mode==='props'?96:80;
+    const propNames=mode==='details'
+      ? ['bench','stool','shelf','vent','pipe','cable','tools','wallpanel','weaponRack','pistolCase','ammoBox','shotgun','medicalCabinet','waterCan','foodCrate','backpack']
+      : ['bed','crate','locker','generator','terminal','decon','damaged','rubble','wire','screen','workstation','airlockPanel','compressor','beacon','table','vent'];
+    const isProp=['props','details'].includes(mode);
+    const cols=isProp?4:6, rows=isProp?4:8;
+    const targetWidth=isProp?96:64, targetHeight=isProp?96:80;
     const pieces=[];
     for(let row=0;row<rows;row++) for(let col=0;col<cols;col++) {
       const bounds=Array.from({length:rows+1},(_,i)=>Math.floor(i*info.height/rows));
@@ -70,7 +75,7 @@ async function main() {
       const m=await sharp(resized).metadata();
       const tile=await sharp({create:{width:targetWidth,height:targetHeight,channels:4,background:'#00000000'}}).composite([{input:resized,left:Math.round((targetWidth-m.width)/2),top:targetHeight-m.height}]).png().toBuffer();
       pieces.push({input:tile,left:col*targetWidth,top:row*targetHeight});
-      await fs.writeFile(path.join(destination,mode==='props'?`${propNames[row*cols+col]}.png`:`resident-${row}-${col}.png`),tile);
+      await fs.writeFile(path.join(destination,isProp?`${propNames[row*cols+col]}.png`:`resident-${row}-${col}.png`),tile);
     }
     await sharp({create:{width:cols*targetWidth,height:rows*targetHeight,channels:4,background:'#00000000'}}).composite(pieces).png().toFile(path.join(destination,`${mode}.png`));
   }

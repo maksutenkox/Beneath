@@ -5,6 +5,7 @@ import { CharacterSpriteStack } from './CharacterSpriteStack.js';
 import { ResidentSpriteSheet } from './ResidentSpriteSheet.js';
 import { EnvironmentAtlas } from './EnvironmentAtlas.js';
 import { MaterialAtlas } from './MaterialAtlas.js';
+import { DetailAtlas, detailKind } from './DetailAtlas.js';
 
 const PALETTE = {
   central: ["#293437", "#283336"], living: ["#393e37", "#373c35"],
@@ -27,7 +28,7 @@ const WALL_STYLE = {
 };
 
 export class IsometricScene {
-  #heroine; #residents; #environment; #materials;
+  #heroine; #residents; #environment; #materials; #details;
   #canvas; #context; #map; #sectorStates; #lighting; #staticEntities; #orderedFloors; #sprites; #dpr = 1; #tileWidth = 60; #tileHeight = 30; #originX = 0; #originY = 0; #sceneTime = 0;
 
   constructor(canvas, map, sectorStates, lighting) {
@@ -40,6 +41,7 @@ export class IsometricScene {
     this.#heroine.load();
     this.#residents = new ResidentSpriteSheet();
     this.#environment = new EnvironmentAtlas();
+    this.#details = new DetailAtlas();
     this.#materials = new MaterialAtlas();
     this.#staticEntities = [
       ...map.obstacles.map((item) => ({ item, entity: "obstacle" })),
@@ -418,11 +420,15 @@ export class IsometricScene {
   #drawObstacle(item) {
     const p = this.#iso(item.x + .5, item.y + .5);
     if (item.kind === "generator") p.y += Math.sin(this.#sceneTime * 12 + item.x) * .7 * this.#dpr;
-    const rasterSize=(['wire','rubble','debris'].includes(item.kind)?64:80)*this.#dpr;
+      if(this.#details.draw(this.#context,detailKind(item),p.x,p.y+this.#tileHeight*.4,this.#dpr,this.#sceneTime)) return;
+      const rasterSize=(['wire','rubble','debris'].includes(item.kind)?64:80)*this.#dpr;
     if(this.#environment.ready) {
       const ctx=this.#context, groundY=p.y+this.#tileHeight*.4;
       ctx.save(); ctx.fillStyle='rgb(0 0 0 / 40%)'; ctx.beginPath(); ctx.ellipse(p.x,groundY,this.#tileWidth*.25,this.#tileHeight*.1,0,0,Math.PI*2);ctx.fill();ctx.restore();
-      if(this.#environment.draw(ctx,item.kind,p.x,groundY,rasterSize)) return;
+       if(this.#environment.draw(ctx,item.kind,p.x,groundY,rasterSize)) {
+         if(item.id==='storage-crate-b') this.#details.draw(ctx,'waterCan',p.x+12*this.#dpr,groundY-16*this.#dpr,this.#dpr);
+         return;
+       }
     }
 
     const zone = floorAt(this.#map, Math.floor(item.x), Math.floor(item.y))?.zone;
@@ -475,7 +481,11 @@ export class IsometricScene {
     const p = this.#iso(item.x, item.y);
     const ctx = this.#context;
     const s = this.#dpr;
-    if(['table','cabinet'].includes(item.kind) && this.#environment.draw(ctx,item.kind,p.x,p.y+this.#tileHeight*.34,64*s)) return;
+    if(this.#details.draw(ctx,detailKind(item),p.x,p.y+this.#tileHeight*.34,s,this.#sceneTime)) return;
+    if(['table','cabinet'].includes(item.kind) && this.#environment.draw(ctx,item.kind,p.x,p.y+this.#tileHeight*.34,64*s)) {
+      if(item.id==='workshop-table') this.#details.draw(ctx,'shotgun',p.x,p.y-11*s,s);
+      return;
+    }
     const castsShadow = ["table", "cabinet", "shelf", "bench", "stool"].includes(item.kind);
     const benchmarkZone = item.zone === "central" || item.zone === "living";
     const detailedSprite = benchmarkZone
