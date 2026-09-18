@@ -458,7 +458,7 @@ export class IsometricScene {
     const castsShadow = ["table", "cabinet", "shelf", "bench", "stool"].includes(item.kind);
     const benchmarkZone = item.zone === "central" || item.zone === "living";
     const detailedSprite = benchmarkZone
-      ? this.#sprites.furnishing(item.kind, Math.floor(this.#sceneTime * 2 + item.x + item.y))
+      ? this.#sprites.furnishing(item.kind, Math.floor(this.#sceneTime * 2 + item.x + item.y) % 2)
       : null;
     const anchorY = p.y + this.#tileHeight * (castsShadow ? .34 : 0);
 
@@ -475,13 +475,15 @@ export class IsometricScene {
         ctx.ellipse(p.x, baseY, this.#tileWidth * .17, this.#tileHeight * .055, 0, 0, Math.PI * 2);
         ctx.fill();
       }
-      ctx.drawImage(
-        detailedSprite,
-        Math.round(p.x - width / 2),
-        Math.round(baseY - height * (wallMounted ? .72 : .84)),
-        width,
-        height
-      );
+      const drawX = Math.round(p.x - width / 2);
+      const drawY = Math.round(baseY - height * (wallMounted ? .72 : .84));
+      ctx.drawImage(detailedSprite, drawX, drawY, width, height);
+      if (item.kind === "sign" && item.text) {
+        ctx.fillStyle = "#20241f";
+        ctx.font = `bold ${Math.max(5, 5 * this.#dpr)}px monospace`;
+        ctx.textAlign = "center";
+        ctx.fillText(item.text, Math.round(p.x), Math.round(drawY + height * .52));
+      }
       ctx.restore();
       return;
     }
