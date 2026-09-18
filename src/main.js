@@ -22,6 +22,11 @@ import { createPlatform } from "./platform/createPlatform.js";
 const canvas = document.querySelector("#game-canvas");
 const platformStatus = document.querySelector("#platform-status");
 const platform = createPlatform();
+const touchUi = platform.name === "Telegram Mini App"
+  || (navigator.maxTouchPoints ?? 0) > 0
+  || window.matchMedia?.("(pointer: coarse)")?.matches;
+document.documentElement.classList.toggle("touch-ui", Boolean(touchUi));
+document.documentElement.classList.toggle("desktop-ui", !touchUi);
 const sectorStates = new SectorStateSystem(shelterMap);
 const collisionMap = new CollisionMap(shelterMap, sectorStates);
 const input = new InputController(document);
