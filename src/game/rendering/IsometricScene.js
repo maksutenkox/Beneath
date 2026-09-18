@@ -2,10 +2,10 @@ import { floorAt } from "../map/ShelterMap.js";
 import { PixelSpriteLibrary } from "./PixelSpriteLibrary.js";
 
 const PALETTE = {
-  central: ["#293437", "#232d30"], living: ["#3b4038", "#343a33"],
-  storage: ["#3d3630", "#352f2a"], generator: ["#33383b", "#2b3134"], airlock: ["#394044", "#30373b"]
-  , medical: ["#453536", "#3a2e30"], workshop: ["#453b32", "#3a322c"],
-  additional: ["#27282a", "#222326"], unknownNorth: ["#20272b", "#1a2125"], unknownSouth: ["#111619", "#0d1215"]
+  central: ["#293437", "#273235"], living: ["#3a3f38", "#383d36"],
+  storage: ["#3b3530", "#39332e"], generator: ["#32383b", "#303639"], airlock: ["#374044", "#353d41"],
+  medical: ["#423536", "#3f3234"], workshop: ["#423a33", "#3f3730"],
+  additional: ["#27282a", "#252628"], unknownNorth: ["#20272b", "#1e2529"], unknownSouth: ["#111619", "#101518"]
 };
 
 export class IsometricScene {
@@ -144,22 +144,49 @@ export class IsometricScene {
   }
 
   #drawFloor(tile) {
-    const p = this.#iso(tile.x, tile.y); const hw = this.#tileWidth / 2; const hh = this.#tileHeight / 2;
+    const p = this.#iso(tile.x, tile.y);
+    const hw = this.#tileWidth / 2;
+    const hh = this.#tileHeight / 2;
     const corners = [{ x: p.x, y: p.y }, { x: p.x + hw, y: p.y + hh }, { x: p.x, y: p.y + this.#tileHeight }, { x: p.x - hw, y: p.y + hh }];
     this.#polygon(corners, PALETTE[tile.zone][(tile.x + tile.y) & 1]);
-    const ctx = this.#context, seed = tile.x * 31 + tile.y * 17;
-    ctx.save(); ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p.x+hw,p.y+hh); ctx.lineTo(p.x,p.y+this.#tileHeight); ctx.lineTo(p.x-hw,p.y+hh); ctx.clip();
-    // Authored wear pattern replaces the conspicuous checkerboard grid.
-    ctx.globalAlpha = .24; ctx.fillStyle = seed % 3 ? "#101719" : "#7b765b";
-    ctx.fillRect(Math.round(p.x - hw * .52), Math.round(p.y + hh * .65), Math.round(hw * .42), Math.max(1, this.#dpr));
-    ctx.fillRect(Math.round(p.x + hw * .12), Math.round(p.y + hh * .28), Math.round(hw * .19), Math.max(1, this.#dpr));
-    if (seed % 5 === 0) { ctx.fillStyle = "#a18749"; ctx.fillRect(Math.round(p.x - 2*this.#dpr), Math.round(p.y+hh), 4*this.#dpr, this.#dpr); }
-    if (["generator","airlock"].includes(tile.zone)) { ctx.fillStyle="#11191b"; for(let i=-1;i<=1;i++) ctx.fillRect(p.x+i*6*this.#dpr,p.y+hh+i*3*this.#dpr,2*this.#dpr,2*this.#dpr); }
-    if (tile.zone === "living" && seed % 4 === 0) { ctx.fillStyle="#80614a"; ctx.fillRect(p.x-hw*.28,p.y+hh*.62,hw*.56,2*this.#dpr); }
+
+    const ctx = this.#context;
+    const seed = tile.x * 31 + tile.y * 17;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + hw, p.y + hh); ctx.lineTo(p.x, p.y + this.#tileHeight); ctx.lineTo(p.x - hw, p.y + hh);
+    ctx.clip();
+
+    // Keep floor wear broad and low-contrast. Tiny bright pixels made the map look noisy.
+    ctx.globalAlpha = .14;
+    ctx.fillStyle = "#11191b";
+    if (seed % 3 === 0) ctx.fillRect(Math.round(p.x - hw * .48), Math.round(p.y + hh * .7), Math.round(hw * .38), Math.max(1, this.#dpr));
+    if (seed % 4 === 0) ctx.fillRect(Math.round(p.x + hw * .08), Math.round(p.y + hh * .34), Math.round(hw * .24), Math.max(1, this.#dpr));
+    if (["generator", "airlock"].includes(tile.zone) && seed % 2 === 0) {
+      ctx.globalAlpha = .2;
+      ctx.fillStyle = "#151d1f";
+      ctx.fillRect(Math.round(p.x - hw * .18), Math.round(p.y + hh * .7), Math.round(hw * .36), Math.max(1, 2 * this.#dpr));
+    }
+    if (tile.zone === "living" && seed % 5 === 0) {
+      ctx.globalAlpha = .12;
+      ctx.fillStyle = "#62574a";
+      ctx.fillRect(Math.round(p.x - hw * .24), Math.round(p.y + hh * .68), Math.round(hw * .48), Math.max(1, 2 * this.#dpr));
+    }
     ctx.restore();
-    ctx.strokeStyle="rgb(103 116 112 / 18%)"; ctx.lineWidth=Math.max(1,this.#dpr); ctx.beginPath(); ctx.moveTo(p.x-hw,p.y+hh); ctx.lineTo(p.x,p.y+this.#tileHeight); ctx.stroke();
-    if (tile.zone === "central") { ctx.fillStyle = "#8b7b3e"; ctx.fillRect(p.x - 2 * this.#dpr, p.y + hh - this.#dpr, 4 * this.#dpr, 2 * this.#dpr); }
-    if (["medical", "workshop"].includes(tile.zone) && (tile.x * 3 + tile.y) % 7 === 0) { const ctx = this.#context; ctx.strokeStyle = "#8c4f48"; ctx.beginPath(); ctx.moveTo(p.x - hw * .2, p.y + hh * .8); ctx.lineTo(p.x + hw * .18, p.y + hh * 1.2); ctx.stroke(); }
+
+    // A restrained seam preserves the tile structure without turning the floor into a checkerboard.
+    ctx.strokeStyle = "rgb(103 116 112 / 10%)";
+    ctx.lineWidth = Math.max(1, this.#dpr);
+    ctx.beginPath(); ctx.moveTo(p.x - hw, p.y + hh); ctx.lineTo(p.x, p.y + this.#tileHeight); ctx.stroke();
+
+    if (tile.zone === "central" && seed % 3 === 0) {
+      ctx.fillStyle = "rgb(113 124 116 / 16%)";
+      ctx.fillRect(Math.round(p.x - 2 * this.#dpr), Math.round(p.y + hh), 4 * this.#dpr, Math.max(1, this.#dpr));
+    }
+    if (["medical", "workshop"].includes(tile.zone) && (tile.x * 3 + tile.y) % 7 === 0) {
+      ctx.strokeStyle = "rgb(117 73 68 / 55%)";
+      ctx.beginPath(); ctx.moveTo(p.x - hw * .2, p.y + hh * .8); ctx.lineTo(p.x + hw * .18, p.y + hh * 1.2); ctx.stroke();
+    }
   }
 
   #drawSectorEffects(tiles, time) {
