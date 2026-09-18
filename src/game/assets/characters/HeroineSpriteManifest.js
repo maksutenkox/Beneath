@@ -6,6 +6,33 @@ export const HEROINE_SPRITE_MANIFEST = Object.freeze({
   frameHeight: 80,
   directions: 8,
   clips: DEFAULT_CHARACTER_CLIPS,
+
+  appearance: Object.freeze({
+    hair: "copper-red",
+    hairstyle: "high-messy-ponytail",
+    jacket: "olive-work-jacket",
+    trousers: "blue-jeans",
+    footwear: "work-boots",
+    backpackByDefault: false
+  }),
+
+  equipment: Object.freeze({
+    layered: true,
+    frameAligned: true,
+    slots: Object.freeze([
+      "back",
+      "outerwear",
+      "head",
+      "hands"
+    ]),
+    defaultLoadout: Object.freeze({
+      back: null,
+      outerwear: null,
+      head: null,
+      hands: null
+    })
+  }),
+
   layout: Object.freeze({
     rows: [
       "south",
