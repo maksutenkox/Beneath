@@ -2,10 +2,23 @@ import { floorAt } from "../map/ShelterMap.js";
 import { PixelSpriteLibrary } from "./PixelSpriteLibrary.js";
 
 const PALETTE = {
-  central: ["#293437", "#273235"], living: ["#3a3f38", "#383d36"],
-  storage: ["#3b3530", "#39332e"], generator: ["#32383b", "#303639"], airlock: ["#374044", "#353d41"],
-  medical: ["#423536", "#3f3234"], workshop: ["#423a33", "#3f3730"],
-  additional: ["#27282a", "#252628"], unknownNorth: ["#20272b", "#1e2529"], unknownSouth: ["#111619", "#101518"]
+  central: ["#293437", "#283336"], living: ["#393e37", "#373c35"],
+  storage: ["#3a342f", "#38322d"], generator: ["#31373a", "#303639"], airlock: ["#363e42", "#343c40"],
+  medical: ["#403435", "#3e3233"], workshop: ["#403831", "#3e362f"],
+  additional: ["#262729", "#242527"], unknownNorth: ["#20272b", "#1e2529"], unknownSouth: ["#111619", "#101518"]
+};
+
+const WALL_STYLE = {
+  central: { north: "#46575b", west: "#35464b", trim: "#657276", accent: "#596566" },
+  living: { north: "#4c5750", west: "#3a4641", trim: "#6e776d", accent: "#686a55" },
+  storage: { north: "#514b46", west: "#3f3b37", trim: "#716b63", accent: "#685a4b" },
+  generator: { north: "#45545a", west: "#34444a", trim: "#69777b", accent: "#4f6266" },
+  airlock: { north: "#4b5a60", west: "#394a50", trim: "#718087", accent: "#5d6c70" },
+  medical: { north: "#53494b", west: "#413a3d", trim: "#776b6e", accent: "#67585b" },
+  workshop: { north: "#514a43", west: "#403a35", trim: "#746c62", accent: "#695b4b" },
+  additional: { north: "#3d4447", west: "#2f393c", trim: "#596367", accent: "#4c5558" },
+  unknownNorth: { north: "#333e42", west: "#283438", trim: "#4a565b", accent: "#3b484d" },
+  unknownSouth: { north: "#252d30", west: "#1c2528", trim: "#3b464a", accent: "#303a3d" }
 };
 
 export class IsometricScene {
@@ -148,45 +161,106 @@ export class IsometricScene {
     const p = this.#iso(tile.x, tile.y);
     const hw = this.#tileWidth / 2;
     const hh = this.#tileHeight / 2;
-    const corners = [{ x: p.x, y: p.y }, { x: p.x + hw, y: p.y + hh }, { x: p.x, y: p.y + this.#tileHeight }, { x: p.x - hw, y: p.y + hh }];
-    this.#polygon(corners, PALETTE[tile.zone][(tile.x + tile.y) & 1]);
+    const corners = [
+      { x: p.x, y: p.y },
+      { x: p.x + hw, y: p.y + hh },
+      { x: p.x, y: p.y + this.#tileHeight },
+      { x: p.x - hw, y: p.y + hh }
+    ];
+    const seed = tile.x * 31 + tile.y * 17;
+    const base = PALETTE[tile.zone][(tile.x + tile.y) & 1];
+    this.#polygon(corners, base);
 
     const ctx = this.#context;
-    const seed = tile.x * 31 + tile.y * 17;
     ctx.save();
     ctx.beginPath();
-    ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + hw, p.y + hh); ctx.lineTo(p.x, p.y + this.#tileHeight); ctx.lineTo(p.x - hw, p.y + hh);
+    ctx.moveTo(p.x, p.y);
+    ctx.lineTo(p.x + hw, p.y + hh);
+    ctx.lineTo(p.x, p.y + this.#tileHeight);
+    ctx.lineTo(p.x - hw, p.y + hh);
+    ctx.closePath();
     ctx.clip();
 
-    // Keep floor wear broad and low-contrast. Tiny bright pixels made the map look noisy.
-    ctx.globalAlpha = .14;
-    ctx.fillStyle = "#11191b";
-    if (seed % 3 === 0) ctx.fillRect(Math.round(p.x - hw * .48), Math.round(p.y + hh * .7), Math.round(hw * .38), Math.max(1, this.#dpr));
-    if (seed % 4 === 0) ctx.fillRect(Math.round(p.x + hw * .08), Math.round(p.y + hh * .34), Math.round(hw * .24), Math.max(1, this.#dpr));
-    if (["generator", "airlock"].includes(tile.zone) && seed % 2 === 0) {
-      ctx.globalAlpha = .2;
-      ctx.fillStyle = "#151d1f";
-      ctx.fillRect(Math.round(p.x - hw * .18), Math.round(p.y + hh * .7), Math.round(hw * .36), Math.max(1, 2 * this.#dpr));
+    // Large bunker plates: broad seams and recesses instead of noisy per-pixel wear.
+    if ((tile.x & 1) === 0) {
+      ctx.strokeStyle = "rgb(7 12 14 / 28%)";
+      ctx.lineWidth = Math.max(1, this.#dpr);
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y + 2 * this.#dpr);
+      ctx.lineTo(p.x, p.y + this.#tileHeight - 2 * this.#dpr);
+      ctx.stroke();
     }
+    if ((tile.y & 1) === 0) {
+      ctx.strokeStyle = "rgb(115 128 124 / 9%)";
+      ctx.beginPath();
+      ctx.moveTo(p.x - hw * .82, p.y + hh * .58);
+      ctx.lineTo(p.x + hw * .82, p.y + hh * 1.42);
+      ctx.stroke();
+    }
+
+    // Recessed plate inside selected cells adds depth without turning the floor into a checkerboard.
+    if (seed % 4 === 0) {
+      ctx.globalAlpha = .17;
+      ctx.fillStyle = "#12191b";
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y + hh * .28);
+      ctx.lineTo(p.x + hw * .58, p.y + hh * .86);
+      ctx.lineTo(p.x, p.y + hh * 1.44);
+      ctx.lineTo(p.x - hw * .58, p.y + hh * .86);
+      ctx.closePath();
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    // Technical rooms use low-contrast service grates.
+    if (["generator", "workshop", "airlock"].includes(tile.zone) && seed % 3 === 0) {
+      ctx.strokeStyle = "rgb(12 19 21 / 52%)";
+      ctx.lineWidth = Math.max(1, this.#dpr);
+      for (let i = -2; i <= 2; i += 1) {
+        const ox = i * 4 * this.#dpr;
+        ctx.beginPath();
+        ctx.moveTo(p.x - hw * .22 + ox, p.y + hh * .72 + ox * .5);
+        ctx.lineTo(p.x + hw * .2 + ox, p.y + hh * 1.14 + ox * .5);
+        ctx.stroke();
+      }
+    }
+
     if (tile.zone === "living" && seed % 5 === 0) {
-      ctx.globalAlpha = .12;
-      ctx.fillStyle = "#62574a";
-      ctx.fillRect(Math.round(p.x - hw * .24), Math.round(p.y + hh * .68), Math.round(hw * .48), Math.max(1, 2 * this.#dpr));
+      ctx.fillStyle = "rgb(106 96 78 / 16%)";
+      ctx.fillRect(
+        Math.round(p.x - hw * .24),
+        Math.round(p.y + hh * .73),
+        Math.round(hw * .48),
+        Math.max(1, 2 * this.#dpr)
+      );
     }
+
+    if (tile.zone === "central" && (tile.y === 9 || tile.y === 10)) {
+      ctx.strokeStyle = "rgb(102 116 115 / 16%)";
+      ctx.lineWidth = Math.max(1, 2 * this.#dpr);
+      ctx.beginPath();
+      ctx.moveTo(p.x - hw * .68, p.y + hh * .66);
+      ctx.lineTo(p.x + hw * .68, p.y + hh * 1.34);
+      ctx.stroke();
+    }
+
     ctx.restore();
 
-    // A restrained seam preserves the tile structure without turning the floor into a checkerboard.
-    ctx.strokeStyle = "rgb(103 116 112 / 10%)";
+    // Bottom edge catches a little light and keeps adjacent plates from visually melting together.
+    ctx.strokeStyle = "rgb(130 143 137 / 10%)";
     ctx.lineWidth = Math.max(1, this.#dpr);
-    ctx.beginPath(); ctx.moveTo(p.x - hw, p.y + hh); ctx.lineTo(p.x, p.y + this.#tileHeight); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(p.x - hw, p.y + hh);
+    ctx.lineTo(p.x, p.y + this.#tileHeight);
+    ctx.lineTo(p.x + hw, p.y + hh);
+    ctx.stroke();
 
-    if (tile.zone === "central" && seed % 3 === 0) {
-      ctx.fillStyle = "rgb(113 124 116 / 16%)";
-      ctx.fillRect(Math.round(p.x - 2 * this.#dpr), Math.round(p.y + hh), 4 * this.#dpr, Math.max(1, this.#dpr));
-    }
-    if (["medical", "workshop"].includes(tile.zone) && (tile.x * 3 + tile.y) % 7 === 0) {
-      ctx.strokeStyle = "rgb(117 73 68 / 55%)";
-      ctx.beginPath(); ctx.moveTo(p.x - hw * .2, p.y + hh * .8); ctx.lineTo(p.x + hw * .18, p.y + hh * 1.2); ctx.stroke();
+    if (["medical", "workshop"].includes(tile.zone) && (tile.x * 3 + tile.y) % 9 === 0) {
+      ctx.strokeStyle = "rgb(118 72 67 / 42%)";
+      ctx.beginPath();
+      ctx.moveTo(p.x - hw * .16, p.y + hh * .82);
+      ctx.lineTo(p.x + hw * .14, p.y + hh * 1.12);
+      ctx.stroke();
     }
   }
 
@@ -217,10 +291,10 @@ export class IsometricScene {
     const west = floorAt(this.#map, tile.x - 1, tile.y);
 
     if (!north || (north.zone !== tile.zone && !this.#hasDoorOnEdge(tile.x, tile.y, "north"))) {
-      this.#wallFace(tile.x, tile.y, "north");
+      this.#wallFace(tile.x, tile.y, "north", tile.zone);
     }
     if (!west || (west.zone !== tile.zone && !this.#hasDoorOnEdge(tile.x, tile.y, "west"))) {
-      this.#wallFace(tile.x, tile.y, "west");
+      this.#wallFace(tile.x, tile.y, "west", tile.zone);
     }
   }
 
@@ -238,18 +312,93 @@ export class IsometricScene {
     );
   }
 
-  #wallFace(x, y, side) {
-    const bottom = this.#iso(x, y), top = this.#iso(x, y, 1.15);
+  #wallFace(x, y, side, zone = "central") {
+    const style = WALL_STYLE[zone] ?? WALL_STYLE.central;
+    const bottom = this.#iso(x, y);
+    const top = this.#iso(x, y, 1.15);
+    const capTop = this.#iso(x, y, 1.25);
     const endBottom = side === "north" ? this.#iso(x + 1, y) : this.#iso(x, y + 1);
     const endTop = side === "north" ? this.#iso(x + 1, y, 1.15) : this.#iso(x, y + 1, 1.15);
-    this.#polygon([top, endTop, endBottom, bottom], side === "north" ? "#48575b" : "#354449", "#171f22");
-    const ctx = this.#context; ctx.strokeStyle = "#718084"; ctx.lineWidth = this.#dpr;
-    ctx.beginPath(); ctx.moveTo(top.x, top.y + 3 * this.#dpr); ctx.lineTo(endTop.x, endTop.y + 3 * this.#dpr); ctx.stroke();
-    // Panel seams, rivets and grime make walls read as bunker modules.
-    const midTop={x:(top.x+endTop.x)/2,y:(top.y+endTop.y)/2}, midBottom={x:(bottom.x+endBottom.x)/2,y:(bottom.y+endBottom.y)/2};
-    ctx.strokeStyle="rgb(20 29 31 / 65%)"; ctx.beginPath(); ctx.moveTo(midTop.x,midTop.y); ctx.lineTo(midBottom.x,midBottom.y); ctx.stroke();
-    ctx.fillStyle="#1b2628"; for (const q of [top,endTop]) ctx.fillRect(Math.round(q.x-1*this.#dpr),Math.round(q.y+7*this.#dpr),2*this.#dpr,2*this.#dpr);
-    ctx.fillStyle="rgb(117 89 55 / 32%)"; ctx.fillRect(Math.round(midBottom.x-5*this.#dpr),Math.round(midBottom.y-4*this.#dpr),10*this.#dpr,2*this.#dpr);
+    const endCapTop = side === "north" ? this.#iso(x + 1, y, 1.25) : this.#iso(x, y + 1, 1.25);
+
+    this.#polygon([top, endTop, endBottom, bottom], side === "north" ? style.north : style.west, "#171f22");
+
+    // A dark top cap gives the wall actual thickness instead of a paper-thin vertical plane.
+    this.#polygon([capTop, endCapTop, endTop, top], "#283337", "#141c1f");
+
+    const ctx = this.#context;
+    const lerpPoint = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+    const leftUpper = lerpPoint(top, bottom, .22);
+    const rightUpper = lerpPoint(endTop, endBottom, .22);
+    const leftLower = lerpPoint(top, bottom, .82);
+    const rightLower = lerpPoint(endTop, endBottom, .82);
+
+    // Horizontal rails frame each wall module.
+    ctx.strokeStyle = style.trim;
+    ctx.globalAlpha = .42;
+    ctx.lineWidth = Math.max(1, this.#dpr);
+    ctx.beginPath();
+    ctx.moveTo(leftUpper.x, leftUpper.y);
+    ctx.lineTo(rightUpper.x, rightUpper.y);
+    ctx.moveTo(leftLower.x, leftLower.y);
+    ctx.lineTo(rightLower.x, rightLower.y);
+    ctx.stroke();
+
+    // Two large panels per tile are more believable than a seam every few pixels.
+    const midTop = lerpPoint(top, endTop, .5);
+    const midBottom = lerpPoint(bottom, endBottom, .5);
+    ctx.strokeStyle = "rgb(15 23 25 / 72%)";
+    ctx.globalAlpha = 1;
+    ctx.beginPath();
+    ctx.moveTo(midTop.x, midTop.y);
+    ctx.lineTo(midBottom.x, midBottom.y);
+    ctx.stroke();
+
+    // Recessed lower plinth visually anchors the wall into the floor.
+    const baseLeft = lerpPoint(top, bottom, .88);
+    const baseRight = lerpPoint(endTop, endBottom, .88);
+    this.#polygon([baseLeft, baseRight, endBottom, bottom], "#263236", "#151d20");
+
+    // Muted sector accent: enough identity to differentiate rooms without bright gamey stripes.
+    const accentLeft = lerpPoint(top, bottom, .69);
+    const accentRight = lerpPoint(endTop, endBottom, .69);
+    ctx.strokeStyle = style.accent;
+    ctx.globalAlpha = .34;
+    ctx.lineWidth = Math.max(1, 2 * this.#dpr);
+    ctx.beginPath();
+    ctx.moveTo(accentLeft.x, accentLeft.y);
+    ctx.lineTo(accentRight.x, accentRight.y);
+    ctx.stroke();
+
+    // Sparse bolts/brackets at structural joints.
+    ctx.globalAlpha = .75;
+    ctx.fillStyle = "#172124";
+    for (const point of [
+      lerpPoint(top, bottom, .3),
+      lerpPoint(endTop, endBottom, .3),
+      lerpPoint(top, bottom, .73),
+      lerpPoint(endTop, endBottom, .73)
+    ]) {
+      ctx.fillRect(
+        Math.round(point.x - this.#dpr),
+        Math.round(point.y - this.#dpr),
+        2 * this.#dpr,
+        2 * this.#dpr
+      );
+    }
+
+    // Very restrained grime near the base keeps pristine repeated modules from looking synthetic.
+    if ((x * 7 + y * 11) % 4 === 0) {
+      const grime = lerpPoint(midTop, midBottom, .86);
+      ctx.fillStyle = "rgb(91 69 49 / 22%)";
+      ctx.fillRect(
+        Math.round(grime.x - 5 * this.#dpr),
+        Math.round(grime.y - this.#dpr),
+        10 * this.#dpr,
+        2 * this.#dpr
+      );
+    }
+    ctx.globalAlpha = 1;
   }
 
   #drawObstacle(item) {
@@ -389,97 +538,157 @@ export class IsometricScene {
       west: { x: item.x, y: item.y + .5 },
       east: { x: item.x + 1, y: item.y + .5 }
     }[item.orientation] ?? { x: item.x + .5, y: item.y + .5 };
+
     const p = this.#iso(edgePoint.x, edgePoint.y);
     const ctx = this.#context;
-    const groundY = p.y;
     const progress = sealed ? 0 : Math.max(0, Math.min(1, item.progress ?? (item.open ? 1 : 0)));
     const hermetic = item.visualStyle === "hermetic";
-    const totalWidth = this.#tileWidth * (hermetic ? .88 : .64);
-    const frameHeight = (hermetic ? 48 : 38) * this.#dpr;
-    const postWidth = (hermetic ? 6 : 4) * this.#dpr;
-    const beamHeight = (hermetic ? 7 : 5) * this.#dpr;
-    const sillHeight = (hermetic ? 4 : 2) * this.#dpr;
+    const totalWidth = this.#tileWidth * (hermetic ? .92 : .7);
+    const frameHeight = (hermetic ? 52 : 42) * this.#dpr;
+    const postWidth = (hermetic ? 7 : 5) * this.#dpr;
+    const beamHeight = (hermetic ? 8 : 6) * this.#dpr;
+    const sillHeight = (hermetic ? 5 : 3) * this.#dpr;
     const innerWidth = totalWidth - postWidth * 2;
     const innerTop = -frameHeight + beamHeight;
     const innerHeight = frameHeight - beamHeight - sillHeight;
     const locked = item.state === "locked";
     const jammed = item.state === "jammed";
+    const tilt = ["north", "south"].includes(item.orientation) ? .5 : -.5;
 
     ctx.save();
-    ctx.translate(p.x, groundY);
-    ctx.transform(1, ["north", "south"].includes(item.orientation) ? .5 : -.5, 0, 1, 0, 0);
+    ctx.translate(p.x, p.y);
 
-    // Threshold and portal frame make room transitions read as actual doorways.
-    ctx.fillStyle = "#171e20";
-    ctx.fillRect(-totalWidth / 2 - 2 * this.#dpr, -sillHeight, totalWidth + 4 * this.#dpr, sillHeight + 2 * this.#dpr);
-    ctx.fillStyle = hermetic ? "#48575b" : "#505d5d";
+    // Contact shadow and threshold are drawn before the vertical frame so the portal sits in the wall.
+    ctx.save();
+    ctx.transform(1, tilt, 0, 1, 0, 0);
+    ctx.fillStyle = "rgb(0 0 0 / 34%)";
+    ctx.fillRect(-totalWidth * .55, -1 * this.#dpr, totalWidth * 1.1, 6 * this.#dpr);
+    ctx.fillStyle = hermetic ? "#252e31" : "#293335";
+    ctx.fillRect(-totalWidth / 2, -sillHeight, totalWidth, sillHeight);
+    ctx.fillStyle = "#12191b";
+    ctx.fillRect(-innerWidth / 2, -2 * this.#dpr, innerWidth, 2 * this.#dpr);
+    ctx.restore();
+
+    ctx.transform(1, tilt, 0, 1, 0, 0);
+
+    // Structural frame: dark recess behind a brighter metal shell.
+    ctx.fillStyle = "#151d1f";
+    ctx.fillRect(-totalWidth / 2 - 2 * this.#dpr, -frameHeight - 2 * this.#dpr, totalWidth + 4 * this.#dpr, frameHeight + 2 * this.#dpr);
+
+    ctx.fillStyle = hermetic ? "#536267" : "#505c5e";
     ctx.fillRect(-totalWidth / 2, -frameHeight, postWidth, frameHeight);
     ctx.fillRect(totalWidth / 2 - postWidth, -frameHeight, postWidth, frameHeight);
     ctx.fillRect(-totalWidth / 2, -frameHeight, totalWidth, beamHeight);
-    ctx.fillStyle = hermetic ? "#273235" : "#2d3839";
-    ctx.fillRect(-totalWidth / 2 + this.#dpr, -frameHeight + this.#dpr, totalWidth - 2 * this.#dpr, 2 * this.#dpr);
 
-    // Door leaf animation is clipped inside the frame instead of shrinking like a floor bar.
+    // Header track/motor housing makes normal doors read as sliding industrial doors.
+    ctx.fillStyle = hermetic ? "#303b3f" : "#303a3b";
+    ctx.fillRect(-innerWidth / 2, -frameHeight + 2 * this.#dpr, innerWidth, 3 * this.#dpr);
+    ctx.fillStyle = "#1c2527";
+    ctx.fillRect(-innerWidth * .38, -frameHeight - 4 * this.#dpr, innerWidth * .76, 4 * this.#dpr);
+
+    // Moving leaf/leafs remain clipped inside the portal.
     ctx.save();
     ctx.beginPath();
     ctx.rect(-innerWidth / 2, innerTop, innerWidth, innerHeight);
     ctx.clip();
 
-    const panel = locked ? "#6e4643" : jammed ? "#71523d" : hermetic ? "#5d696d" : "#66706d";
+    const panel = locked ? "#65433f" : jammed ? "#6b4f3d" : hermetic ? "#58666a" : "#5e6967";
     if (hermetic) {
       const half = innerWidth / 2;
       const shift = progress * half;
       ctx.fillStyle = panel;
       ctx.fillRect(-innerWidth / 2 - shift, innerTop, half + 1, innerHeight);
       ctx.fillRect(shift, innerTop, half + 1, innerHeight);
-      ctx.fillStyle = "#20292b";
+
+      ctx.fillStyle = "#2c373a";
+      ctx.fillRect(-innerWidth / 2 + 4 * this.#dpr - shift, innerTop + 4 * this.#dpr, half - 8 * this.#dpr, 4 * this.#dpr);
+      ctx.fillRect(shift + 4 * this.#dpr, innerTop + innerHeight - 8 * this.#dpr, half - 8 * this.#dpr, 4 * this.#dpr);
+
+      ctx.strokeStyle = "rgb(24 32 34 / 82%)";
+      ctx.lineWidth = 2 * this.#dpr;
+      ctx.beginPath();
+      ctx.moveTo(-innerWidth * .42 - shift, innerTop + innerHeight * .22);
+      ctx.lineTo(-innerWidth * .08 - shift, innerTop + innerHeight * .78);
+      ctx.moveTo(innerWidth * .42 + shift, innerTop + innerHeight * .22);
+      ctx.lineTo(innerWidth * .08 + shift, innerTop + innerHeight * .78);
+      ctx.stroke();
+
+      ctx.fillStyle = "#1a2325";
       ctx.fillRect(-2 * this.#dpr - shift, innerTop, 4 * this.#dpr, innerHeight);
       ctx.fillRect(shift - 2 * this.#dpr, innerTop, 4 * this.#dpr, innerHeight);
     } else {
       const shift = progress * innerWidth;
+      const leafX = -innerWidth / 2 - shift;
       ctx.fillStyle = panel;
-      ctx.fillRect(-innerWidth / 2 - shift, innerTop, innerWidth, innerHeight);
-      ctx.fillStyle = "#303a39";
-      ctx.fillRect(-innerWidth / 2 + 4 * this.#dpr - shift, innerTop + 4 * this.#dpr, 2 * this.#dpr, innerHeight - 8 * this.#dpr);
-      ctx.fillStyle = "#9aa08a";
-      ctx.fillRect(innerWidth * .24 - shift, innerTop + innerHeight * .52, 4 * this.#dpr, 2 * this.#dpr);
+      ctx.fillRect(leafX, innerTop, innerWidth, innerHeight);
+
+      // Recessed service panel and strengthening ribs.
+      ctx.fillStyle = "#3c4848";
+      ctx.fillRect(leafX + 5 * this.#dpr, innerTop + 5 * this.#dpr, innerWidth - 10 * this.#dpr, 4 * this.#dpr);
+      ctx.fillRect(leafX + 5 * this.#dpr, innerTop + innerHeight - 9 * this.#dpr, innerWidth - 10 * this.#dpr, 4 * this.#dpr);
+
+      ctx.strokeStyle = "rgb(29 38 39 / 78%)";
+      ctx.lineWidth = this.#dpr;
+      ctx.beginPath();
+      ctx.moveTo(leafX + innerWidth * .32, innerTop + 9 * this.#dpr);
+      ctx.lineTo(leafX + innerWidth * .32, innerTop + innerHeight - 9 * this.#dpr);
+      ctx.moveTo(leafX + innerWidth * .68, innerTop + 9 * this.#dpr);
+      ctx.lineTo(leafX + innerWidth * .68, innerTop + innerHeight - 9 * this.#dpr);
+      ctx.stroke();
+
+      // Small recessed handle rather than a bright floating pixel.
+      ctx.fillStyle = "#222c2d";
+      ctx.fillRect(leafX + innerWidth * .76, innerTop + innerHeight * .48, 6 * this.#dpr, 5 * this.#dpr);
+      ctx.fillStyle = "#89918a";
+      ctx.fillRect(leafX + innerWidth * .76 + this.#dpr, innerTop + innerHeight * .48 + this.#dpr, 3 * this.#dpr, this.#dpr);
     }
 
-    // Panel seams and damage stay readable at gameplay scale.
-    ctx.strokeStyle = "rgb(28 36 37 / 80%)";
-    ctx.lineWidth = this.#dpr;
-    for (let y = innerTop + 6 * this.#dpr; y < innerTop + innerHeight; y += 8 * this.#dpr) {
-      ctx.beginPath(); ctx.moveTo(-innerWidth / 2, y); ctx.lineTo(innerWidth / 2, y); ctx.stroke();
-    }
     if (item.doorKind === "damaged") {
-      ctx.strokeStyle = "#2b211f";
+      ctx.strokeStyle = "#241d1c";
       ctx.lineWidth = 2 * this.#dpr;
       ctx.beginPath();
-      ctx.moveTo(-innerWidth * .28, innerTop + innerHeight * .2);
-      ctx.lineTo(innerWidth * .04, innerTop + innerHeight * .58);
-      ctx.lineTo(innerWidth * .26, innerTop + innerHeight * .3);
+      ctx.moveTo(-innerWidth * .3, innerTop + innerHeight * .18);
+      ctx.lineTo(innerWidth * .02, innerTop + innerHeight * .58);
+      ctx.lineTo(innerWidth * .27, innerTop + innerHeight * .34);
       ctx.stroke();
     }
     ctx.restore();
 
-    // State light lives on the frame, not on the moving door leaf.
-    const indicator = locked ? "#c85d4d" : jammed ? "#d08a45" : "#8faf74";
-    ctx.fillStyle = "#1a2223";
-    ctx.fillRect(totalWidth / 2 + this.#dpr, -frameHeight + 7 * this.#dpr, 5 * this.#dpr, 8 * this.#dpr);
+    // Side control box is mounted into the frame and carries the state light.
+    const indicator = locked ? "#b5574b" : jammed ? "#b77a43" : "#73936d";
+    ctx.fillStyle = "#20292b";
+    ctx.fillRect(totalWidth / 2 + this.#dpr, -frameHeight + 10 * this.#dpr, 7 * this.#dpr, 11 * this.#dpr);
+    ctx.fillStyle = "#101719";
+    ctx.fillRect(totalWidth / 2 + 2 * this.#dpr, -frameHeight + 11 * this.#dpr, 5 * this.#dpr, 7 * this.#dpr);
     ctx.fillStyle = indicator;
-    ctx.fillRect(totalWidth / 2 + 2 * this.#dpr, -frameHeight + 8 * this.#dpr, 3 * this.#dpr, 3 * this.#dpr);
+    ctx.fillRect(totalWidth / 2 + 3 * this.#dpr, -frameHeight + 12 * this.#dpr, 3 * this.#dpr, 2 * this.#dpr);
 
     if (hermetic) {
-      // Only the external exit gets the unmistakable heavy pressure-door treatment.
-      ctx.strokeStyle = "#8b7952";
-      ctx.lineWidth = 2 * this.#dpr;
-      ctx.strokeRect(-totalWidth / 2 - 2 * this.#dpr, -frameHeight - 2 * this.#dpr, totalWidth + 4 * this.#dpr, frameHeight + 3 * this.#dpr);
-      ctx.fillStyle = "#b08b3f";
-      for (const x of [-.36, .36]) ctx.fillRect(x * totalWidth - 2 * this.#dpr, -frameHeight - 4 * this.#dpr, 4 * this.#dpr, 3 * this.#dpr);
+      // Only the external exit gets the thick pressure-frame and central locking boss.
+      ctx.strokeStyle = "#766d58";
+      ctx.lineWidth = 3 * this.#dpr;
+      ctx.strokeRect(
+        -totalWidth / 2 - 3 * this.#dpr,
+        -frameHeight - 3 * this.#dpr,
+        totalWidth + 6 * this.#dpr,
+        frameHeight + 4 * this.#dpr
+      );
+      ctx.fillStyle = "#2a3437";
+      ctx.beginPath();
+      ctx.arc(0, innerTop + innerHeight * .5, 5 * this.#dpr, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#6d756d";
+      ctx.lineWidth = this.#dpr;
+      ctx.beginPath();
+      ctx.moveTo(-5 * this.#dpr, innerTop + innerHeight * .5);
+      ctx.lineTo(5 * this.#dpr, innerTop + innerHeight * .5);
+      ctx.moveTo(0, innerTop + innerHeight * .5 - 5 * this.#dpr);
+      ctx.lineTo(0, innerTop + innerHeight * .5 + 5 * this.#dpr);
+      ctx.stroke();
     }
 
     if (sealed) {
-      ctx.strokeStyle = "#8b6040";
+      ctx.strokeStyle = "#765344";
       ctx.lineWidth = 4 * this.#dpr;
       ctx.beginPath();
       ctx.moveTo(-innerWidth * .42, innerTop + innerHeight * .18);
