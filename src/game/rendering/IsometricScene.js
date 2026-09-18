@@ -256,8 +256,21 @@ export class IsometricScene {
   }
 
   #drawDecoration(item) {
-    const p = this.#iso(item.x, item.y, .03), ctx = this.#context, s = this.#dpr;
-    ctx.save(); ctx.translate(p.x, p.y);
+    const p = this.#iso(item.x, item.y);
+    const ctx = this.#context;
+    const s = this.#dpr;
+    const wallMounted = ["sign", "wallpanel", "vent", "lamp"].includes(item.kind);
+    const castsShadow = ["table", "cabinet", "shelf", "bench", "stool"].includes(item.kind);
+    const anchorY = p.y + this.#tileHeight * (wallMounted ? .08 : .38);
+
+    ctx.save();
+    if (castsShadow) {
+      ctx.fillStyle = "rgb(0 0 0 / 30%)";
+      ctx.beginPath();
+      ctx.ellipse(p.x, anchorY + 2 * s, this.#tileWidth * .18, this.#tileHeight * .07, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.translate(p.x, anchorY);
     if (item.kind === "pipe" || item.kind === "cable") {
       ctx.strokeStyle = item.kind === "pipe" ? "#667477" : "#8a6545";
       ctx.lineWidth = (item.kind === "pipe" ? 3 : 1.5) * s;
@@ -346,14 +359,15 @@ export class IsometricScene {
   }
 
   #drawDoor(item, sealed) {
-    const p = this.#iso(item.x + .5, item.y + .5, .08);
+    const p = this.#iso(item.x + .5, item.y + .5);
     const ctx = this.#context;
+    const groundY = p.y + this.#tileHeight * .48;
     const progress = sealed ? 0 : Math.max(0, Math.min(1, item.progress ?? (item.open ? 1 : 0)));
     const hermetic = item.visualStyle === "hermetic";
-    const totalWidth = this.#tileWidth * (hermetic ? .88 : .66);
-    const frameHeight = (hermetic ? 30 : 22) * this.#dpr;
-    const postWidth = (hermetic ? 6 : 3) * this.#dpr;
-    const beamHeight = (hermetic ? 6 : 4) * this.#dpr;
+    const totalWidth = this.#tileWidth * (hermetic ? .88 : .64);
+    const frameHeight = (hermetic ? 48 : 38) * this.#dpr;
+    const postWidth = (hermetic ? 6 : 4) * this.#dpr;
+    const beamHeight = (hermetic ? 7 : 5) * this.#dpr;
     const sillHeight = (hermetic ? 4 : 2) * this.#dpr;
     const innerWidth = totalWidth - postWidth * 2;
     const innerTop = -frameHeight + beamHeight;
@@ -362,7 +376,7 @@ export class IsometricScene {
     const jammed = item.state === "jammed";
 
     ctx.save();
-    ctx.translate(p.x, p.y);
+    ctx.translate(p.x, groundY);
     ctx.transform(1, ["north", "south"].includes(item.orientation) ? .5 : -.5, 0, 1, 0, 0);
 
     // Threshold and portal frame make room transitions read as actual doorways.
@@ -455,11 +469,15 @@ export class IsometricScene {
     const phase = Math.floor(player.animationTime * 8) % 4;
     const direction = player.direction ?? "south-east";
     const sprite = this.#sprites.character({ hero:true, direction, frame: walking ? phase : 0 });
-    const scale=Math.max(1,Math.round(this.#tileWidth/32));
-    const w=sprite.width*scale,h=sprite.height*scale, footY=p.y+this.#tileHeight*.4;
-    ctx.save(); ctx.imageSmoothingEnabled=false;
-    ctx.fillStyle="rgb(0 0 0 / 52%)"; ctx.beginPath(); ctx.ellipse(p.x,footY,this.#tileWidth*.22,this.#tileHeight*.11,0,0,Math.PI*2); ctx.fill();
-    ctx.drawImage(sprite,Math.round(p.x-w/2),Math.round(footY-h),w,h); ctx.restore();
+    const scale = Math.max(this.#dpr, Math.round(this.#tileWidth / (48 * this.#dpr)) * this.#dpr);
+    const w = sprite.width * scale;
+    const h = sprite.height * scale;
+    const footY = p.y + this.#tileHeight * .4;
+    ctx.save(); ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = "rgb(0 0 0 / 42%)";
+    ctx.beginPath(); ctx.ellipse(p.x, footY, this.#tileWidth * .16, this.#tileHeight * .075, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.drawImage(sprite, Math.round(p.x - w / 2), Math.round(footY - h), w, h);
+    ctx.restore();
   }
 
   #drawNpc(npc) {
@@ -468,10 +486,15 @@ export class IsometricScene {
     const sitting = npc.activity === "sit";
     const walking = npc.activity === "walk";
     const phase = Math.floor(npc.animationTime * 7) % 4;
-    const sprite=this.#sprites.character({color:npc.color,profession:npc.profession,direction:npc.direction??"south",frame:walking?phase:0,sitting,working:npc.activity==="work"});
-    const scale=Math.max(1,Math.round(this.#tileWidth/36)),w=sprite.width*scale,h=sprite.height*scale,footY=p.y+this.#tileHeight*.38;
-    ctx.save(); ctx.imageSmoothingEnabled=false; ctx.fillStyle="rgb(0 0 0 / 43%)"; ctx.beginPath(); ctx.ellipse(p.x,footY,this.#tileWidth*.18,this.#tileHeight*.09,0,0,Math.PI*2); ctx.fill();
-    ctx.drawImage(sprite,Math.round(p.x-w/2),Math.round(footY-h+(sitting?5*scale:0)),w,h);
+    const sprite = this.#sprites.character({ color:npc.color, profession:npc.profession, direction:npc.direction ?? "south", frame:walking ? phase : 0, sitting, working:npc.activity === "work" });
+    const scale = Math.max(this.#dpr, Math.round(this.#tileWidth / (50 * this.#dpr)) * this.#dpr);
+    const w = sprite.width * scale;
+    const h = sprite.height * scale;
+    const footY = p.y + this.#tileHeight * .38;
+    ctx.save(); ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = "rgb(0 0 0 / 36%)";
+    ctx.beginPath(); ctx.ellipse(p.x, footY, this.#tileWidth * .145, this.#tileHeight * .065, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.drawImage(sprite, Math.round(p.x - w / 2), Math.round(footY - h + (sitting ? 5 * scale : 0)), w, h);
     if (npc.activity === "chat") {
       ctx.fillStyle = "#d7dfca"; ctx.fillRect(p.x+8*scale,footY-h-5*scale,10*scale,6*scale);
       ctx.fillStyle = "#394443"; ctx.fillRect(p.x+11*scale,footY-h-3*scale,scale,scale); ctx.fillRect(p.x+14*scale,footY-h-3*scale,scale,scale);
