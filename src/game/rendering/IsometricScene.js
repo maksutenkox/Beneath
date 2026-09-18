@@ -2,10 +2,23 @@ import { floorAt } from "../map/ShelterMap.js";
 import { PixelSpriteLibrary } from "./PixelSpriteLibrary.js";
 
 const PALETTE = {
-  central: ["#293437", "#273235"], living: ["#3a3f38", "#383d36"],
-  storage: ["#3b3530", "#39332e"], generator: ["#32383b", "#303639"], airlock: ["#374044", "#353d41"],
-  medical: ["#423536", "#3f3234"], workshop: ["#423a33", "#3f3730"],
-  additional: ["#27282a", "#252628"], unknownNorth: ["#20272b", "#1e2529"], unknownSouth: ["#111619", "#101518"]
+  central: ["#293437", "#283336"], living: ["#393e37", "#373c35"],
+  storage: ["#3a342f", "#38322d"], generator: ["#31373a", "#303639"], airlock: ["#363e42", "#343c40"],
+  medical: ["#403435", "#3e3233"], workshop: ["#403831", "#3e362f"],
+  additional: ["#262729", "#242527"], unknownNorth: ["#20272b", "#1e2529"], unknownSouth: ["#111619", "#101518"]
+};
+
+const WALL_STYLE = {
+  central: { north: "#46575b", west: "#35464b", trim: "#657276", accent: "#596566" },
+  living: { north: "#4c5750", west: "#3a4641", trim: "#6e776d", accent: "#686a55" },
+  storage: { north: "#514b46", west: "#3f3b37", trim: "#716b63", accent: "#685a4b" },
+  generator: { north: "#45545a", west: "#34444a", trim: "#69777b", accent: "#4f6266" },
+  airlock: { north: "#4b5a60", west: "#394a50", trim: "#718087", accent: "#5d6c70" },
+  medical: { north: "#53494b", west: "#413a3d", trim: "#776b6e", accent: "#67585b" },
+  workshop: { north: "#514a43", west: "#403a35", trim: "#746c62", accent: "#695b4b" },
+  additional: { north: "#3d4447", west: "#2f393c", trim: "#596367", accent: "#4c5558" },
+  unknownNorth: { north: "#333e42", west: "#283438", trim: "#4a565b", accent: "#3b484d" },
+  unknownSouth: { north: "#252d30", west: "#1c2528", trim: "#3b464a", accent: "#303a3d" }
 };
 
 export class IsometricScene {
@@ -148,45 +161,106 @@ export class IsometricScene {
     const p = this.#iso(tile.x, tile.y);
     const hw = this.#tileWidth / 2;
     const hh = this.#tileHeight / 2;
-    const corners = [{ x: p.x, y: p.y }, { x: p.x + hw, y: p.y + hh }, { x: p.x, y: p.y + this.#tileHeight }, { x: p.x - hw, y: p.y + hh }];
-    this.#polygon(corners, PALETTE[tile.zone][(tile.x + tile.y) & 1]);
+    const corners = [
+      { x: p.x, y: p.y },
+      { x: p.x + hw, y: p.y + hh },
+      { x: p.x, y: p.y + this.#tileHeight },
+      { x: p.x - hw, y: p.y + hh }
+    ];
+    const seed = tile.x * 31 + tile.y * 17;
+    const base = PALETTE[tile.zone][(tile.x + tile.y) & 1];
+    this.#polygon(corners, base);
 
     const ctx = this.#context;
-    const seed = tile.x * 31 + tile.y * 17;
     ctx.save();
     ctx.beginPath();
-    ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + hw, p.y + hh); ctx.lineTo(p.x, p.y + this.#tileHeight); ctx.lineTo(p.x - hw, p.y + hh);
+    ctx.moveTo(p.x, p.y);
+    ctx.lineTo(p.x + hw, p.y + hh);
+    ctx.lineTo(p.x, p.y + this.#tileHeight);
+    ctx.lineTo(p.x - hw, p.y + hh);
+    ctx.closePath();
     ctx.clip();
 
-    // Keep floor wear broad and low-contrast. Tiny bright pixels made the map look noisy.
-    ctx.globalAlpha = .14;
-    ctx.fillStyle = "#11191b";
-    if (seed % 3 === 0) ctx.fillRect(Math.round(p.x - hw * .48), Math.round(p.y + hh * .7), Math.round(hw * .38), Math.max(1, this.#dpr));
-    if (seed % 4 === 0) ctx.fillRect(Math.round(p.x + hw * .08), Math.round(p.y + hh * .34), Math.round(hw * .24), Math.max(1, this.#dpr));
-    if (["generator", "airlock"].includes(tile.zone) && seed % 2 === 0) {
-      ctx.globalAlpha = .2;
-      ctx.fillStyle = "#151d1f";
-      ctx.fillRect(Math.round(p.x - hw * .18), Math.round(p.y + hh * .7), Math.round(hw * .36), Math.max(1, 2 * this.#dpr));
+    // Large bunker plates: broad seams and recesses instead of noisy per-pixel wear.
+    if ((tile.x & 1) === 0) {
+      ctx.strokeStyle = "rgb(7 12 14 / 28%)";
+      ctx.lineWidth = Math.max(1, this.#dpr);
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y + 2 * this.#dpr);
+      ctx.lineTo(p.x, p.y + this.#tileHeight - 2 * this.#dpr);
+      ctx.stroke();
     }
+    if ((tile.y & 1) === 0) {
+      ctx.strokeStyle = "rgb(115 128 124 / 9%)";
+      ctx.beginPath();
+      ctx.moveTo(p.x - hw * .82, p.y + hh * .58);
+      ctx.lineTo(p.x + hw * .82, p.y + hh * 1.42);
+      ctx.stroke();
+    }
+
+    // Recessed plate inside selected cells adds depth without turning the floor into a checkerboard.
+    if (seed % 4 === 0) {
+      ctx.globalAlpha = .17;
+      ctx.fillStyle = "#12191b";
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y + hh * .28);
+      ctx.lineTo(p.x + hw * .58, p.y + hh * .86);
+      ctx.lineTo(p.x, p.y + hh * 1.44);
+      ctx.lineTo(p.x - hw * .58, p.y + hh * .86);
+      ctx.closePath();
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    // Technical rooms use low-contrast service grates.
+    if (["generator", "workshop", "airlock"].includes(tile.zone) && seed % 3 === 0) {
+      ctx.strokeStyle = "rgb(12 19 21 / 52%)";
+      ctx.lineWidth = Math.max(1, this.#dpr);
+      for (let i = -2; i <= 2; i += 1) {
+        const ox = i * 4 * this.#dpr;
+        ctx.beginPath();
+        ctx.moveTo(p.x - hw * .22 + ox, p.y + hh * .72 + ox * .5);
+        ctx.lineTo(p.x + hw * .2 + ox, p.y + hh * 1.14 + ox * .5);
+        ctx.stroke();
+      }
+    }
+
     if (tile.zone === "living" && seed % 5 === 0) {
-      ctx.globalAlpha = .12;
-      ctx.fillStyle = "#62574a";
-      ctx.fillRect(Math.round(p.x - hw * .24), Math.round(p.y + hh * .68), Math.round(hw * .48), Math.max(1, 2 * this.#dpr));
+      ctx.fillStyle = "rgb(106 96 78 / 16%)";
+      ctx.fillRect(
+        Math.round(p.x - hw * .24),
+        Math.round(p.y + hh * .73),
+        Math.round(hw * .48),
+        Math.max(1, 2 * this.#dpr)
+      );
     }
+
+    if (tile.zone === "central" && (tile.y === 9 || tile.y === 10)) {
+      ctx.strokeStyle = "rgb(102 116 115 / 16%)";
+      ctx.lineWidth = Math.max(1, 2 * this.#dpr);
+      ctx.beginPath();
+      ctx.moveTo(p.x - hw * .68, p.y + hh * .66);
+      ctx.lineTo(p.x + hw * .68, p.y + hh * 1.34);
+      ctx.stroke();
+    }
+
     ctx.restore();
 
-    // A restrained seam preserves the tile structure without turning the floor into a checkerboard.
-    ctx.strokeStyle = "rgb(103 116 112 / 10%)";
+    // Bottom edge catches a little light and keeps adjacent plates from visually melting together.
+    ctx.strokeStyle = "rgb(130 143 137 / 10%)";
     ctx.lineWidth = Math.max(1, this.#dpr);
-    ctx.beginPath(); ctx.moveTo(p.x - hw, p.y + hh); ctx.lineTo(p.x, p.y + this.#tileHeight); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(p.x - hw, p.y + hh);
+    ctx.lineTo(p.x, p.y + this.#tileHeight);
+    ctx.lineTo(p.x + hw, p.y + hh);
+    ctx.stroke();
 
-    if (tile.zone === "central" && seed % 3 === 0) {
-      ctx.fillStyle = "rgb(113 124 116 / 16%)";
-      ctx.fillRect(Math.round(p.x - 2 * this.#dpr), Math.round(p.y + hh), 4 * this.#dpr, Math.max(1, this.#dpr));
-    }
-    if (["medical", "workshop"].includes(tile.zone) && (tile.x * 3 + tile.y) % 7 === 0) {
-      ctx.strokeStyle = "rgb(117 73 68 / 55%)";
-      ctx.beginPath(); ctx.moveTo(p.x - hw * .2, p.y + hh * .8); ctx.lineTo(p.x + hw * .18, p.y + hh * 1.2); ctx.stroke();
+    if (["medical", "workshop"].includes(tile.zone) && (tile.x * 3 + tile.y) % 9 === 0) {
+      ctx.strokeStyle = "rgb(118 72 67 / 42%)";
+      ctx.beginPath();
+      ctx.moveTo(p.x - hw * .16, p.y + hh * .82);
+      ctx.lineTo(p.x + hw * .14, p.y + hh * 1.12);
+      ctx.stroke();
     }
   }
 
