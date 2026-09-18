@@ -6,6 +6,7 @@ import {
   normalizeCharacterDirection
 } from "../src/game/animation/CharacterAnimation.js";
 import { CharacterSpriteSheet } from "../src/game/rendering/CharacterSpriteSheet.js";
+import { CharacterSpriteStack } from "../src/game/rendering/CharacterSpriteStack.js";
 
 test("character direction aliases normalize to the eight authored directions", () => {
   assert.equal(CHARACTER_DIRECTIONS.length, 8);
@@ -35,4 +36,22 @@ test("sprite sheet loader can fail cleanly so procedural fallback remains usable
   assert.equal(await sheet.load(), false);
   assert.equal(sheet.ready, false);
   assert.equal(sheet.failed, true);
+});
+
+
+test("equipment layers can be equipped and removed independently from the base heroine", () => {
+  const calls = [];
+  const sheet = (name) => ({
+    load: async () => true,
+    draw: () => { calls.push(name); return true; }
+  });
+
+  const stack = new CharacterSpriteStack({ baseSheet: sheet("base") });
+  stack.setLayer("back", sheet("backpack"));
+  assert.ok(stack.getLayer("back"));
+  assert.equal(stack.draw({}, {}), true);
+  assert.deepEqual(calls, ["base", "backpack"]);
+
+  stack.setLayer("back", null);
+  assert.equal(stack.getLayer("back"), null);
 });
