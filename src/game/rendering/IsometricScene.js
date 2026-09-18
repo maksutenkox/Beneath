@@ -404,14 +404,38 @@ export class IsometricScene {
   #drawObstacle(item) {
     const p = this.#iso(item.x + .5, item.y + .5);
     if (item.kind === "generator") p.y += Math.sin(this.#sceneTime * 12 + item.x) * .7 * this.#dpr;
-    const sprite = this.#sprites.object(item.kind, Math.floor(this.#sceneTime * 4));
-    const scale = Math.max(this.#dpr, Math.round(this.#tileWidth / (64 * this.#dpr)) * this.#dpr);
-    const width = sprite.width * scale, height = sprite.height * scale;
+
+    const zone = floorAt(this.#map, Math.floor(item.x), Math.floor(item.y))?.zone;
+    const detailed = zone === "central" || zone === "living";
+    const sprite = this.#sprites.object(item.kind, Math.floor(this.#sceneTime * 4), detailed);
+    const scale = detailed
+      ? this.#dpr
+      : Math.max(this.#dpr, Math.round(this.#tileWidth / (64 * this.#dpr)) * this.#dpr);
+    const width = sprite.width * scale;
+    const height = sprite.height * scale;
     const ctx = this.#context;
-    ctx.save(); ctx.imageSmoothingEnabled = false;
-    ctx.fillStyle = "rgb(0 0 0 / 38%)";
-    ctx.beginPath(); ctx.ellipse(p.x, p.y + this.#tileHeight * .36, this.#tileWidth * .24, this.#tileHeight * .1, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.drawImage(sprite, Math.round(p.x - width / 2), Math.round(p.y - height + this.#tileHeight * .4), width, height);
+
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = detailed ? "rgb(0 0 0 / 30%)" : "rgb(0 0 0 / 38%)";
+    ctx.beginPath();
+    ctx.ellipse(
+      p.x,
+      p.y + this.#tileHeight * .36,
+      this.#tileWidth * (detailed ? .2 : .24),
+      this.#tileHeight * (detailed ? .075 : .1),
+      0,
+      0,
+      Math.PI * 2
+    );
+    ctx.fill();
+    ctx.drawImage(
+      sprite,
+      Math.round(p.x - width / 2),
+      Math.round(p.y - height + this.#tileHeight * (detailed ? .5 : .4)),
+      width,
+      height
+    );
     ctx.restore();
   }
 
@@ -432,9 +456,35 @@ export class IsometricScene {
     const ctx = this.#context;
     const s = this.#dpr;
     const castsShadow = ["table", "cabinet", "shelf", "bench", "stool"].includes(item.kind);
-    // Only floor-standing furniture needs a lowered contact point. Small decals/effects keep
-    // their authored coordinates so they do not drift after the grounding pass.
+    const benchmarkZone = item.zone === "central" || item.zone === "living";
+    const detailedSprite = benchmarkZone
+      ? this.#sprites.furnishing(item.kind, Math.floor(this.#sceneTime * 2 + item.x + item.y))
+      : null;
     const anchorY = p.y + this.#tileHeight * (castsShadow ? .34 : 0);
+
+    if (detailedSprite) {
+      const width = detailedSprite.width * this.#dpr;
+      const height = detailedSprite.height * this.#dpr;
+      const wallMounted = ["wallpanel", "vent", "sign"].includes(item.kind);
+      const baseY = wallMounted ? p.y + 8 * this.#dpr : anchorY + 7 * this.#dpr;
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      if (castsShadow) {
+        ctx.fillStyle = "rgb(0 0 0 / 24%)";
+        ctx.beginPath();
+        ctx.ellipse(p.x, baseY, this.#tileWidth * .17, this.#tileHeight * .055, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.drawImage(
+        detailedSprite,
+        Math.round(p.x - width / 2),
+        Math.round(baseY - height * (wallMounted ? .72 : .84)),
+        width,
+        height
+      );
+      ctx.restore();
+      return;
+    }
 
     ctx.save();
     if (castsShadow) {
@@ -708,7 +758,7 @@ export class IsometricScene {
     const phase = Math.floor(player.animationTime * 8) % 4;
     const direction = player.direction ?? "south-east";
     const sprite = this.#sprites.character({ hero:true, direction, frame: walking ? phase : 0 });
-    const scale = Math.max(this.#dpr, Math.round(this.#tileWidth / (48 * this.#dpr)) * this.#dpr);
+    const scale = this.#dpr;
     const w = sprite.width * scale;
     const h = sprite.height * scale;
     const footY = p.y + this.#tileHeight * .4;
@@ -726,7 +776,7 @@ export class IsometricScene {
     const walking = npc.activity === "walk";
     const phase = Math.floor(npc.animationTime * 7) % 4;
     const sprite = this.#sprites.character({ color:npc.color, profession:npc.profession, direction:npc.direction ?? "south", frame:walking ? phase : 0, sitting, working:npc.activity === "work" });
-    const scale = Math.max(this.#dpr, Math.round(this.#tileWidth / (50 * this.#dpr)) * this.#dpr);
+    const scale = this.#dpr;
     const w = sprite.width * scale;
     const h = sprite.height * scale;
     const footY = p.y + this.#tileHeight * .38;
