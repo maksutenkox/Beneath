@@ -291,10 +291,10 @@ export class IsometricScene {
     const west = floorAt(this.#map, tile.x - 1, tile.y);
 
     if (!north || (north.zone !== tile.zone && !this.#hasDoorOnEdge(tile.x, tile.y, "north"))) {
-      this.#wallFace(tile.x, tile.y, "north");
+      this.#wallFace(tile.x, tile.y, "north", tile.zone);
     }
     if (!west || (west.zone !== tile.zone && !this.#hasDoorOnEdge(tile.x, tile.y, "west"))) {
-      this.#wallFace(tile.x, tile.y, "west");
+      this.#wallFace(tile.x, tile.y, "west", tile.zone);
     }
   }
 
@@ -312,18 +312,93 @@ export class IsometricScene {
     );
   }
 
-  #wallFace(x, y, side) {
-    const bottom = this.#iso(x, y), top = this.#iso(x, y, 1.15);
+  #wallFace(x, y, side, zone = "central") {
+    const style = WALL_STYLE[zone] ?? WALL_STYLE.central;
+    const bottom = this.#iso(x, y);
+    const top = this.#iso(x, y, 1.15);
+    const capTop = this.#iso(x, y, 1.25);
     const endBottom = side === "north" ? this.#iso(x + 1, y) : this.#iso(x, y + 1);
     const endTop = side === "north" ? this.#iso(x + 1, y, 1.15) : this.#iso(x, y + 1, 1.15);
-    this.#polygon([top, endTop, endBottom, bottom], side === "north" ? "#48575b" : "#354449", "#171f22");
-    const ctx = this.#context; ctx.strokeStyle = "#718084"; ctx.lineWidth = this.#dpr;
-    ctx.beginPath(); ctx.moveTo(top.x, top.y + 3 * this.#dpr); ctx.lineTo(endTop.x, endTop.y + 3 * this.#dpr); ctx.stroke();
-    // Panel seams, rivets and grime make walls read as bunker modules.
-    const midTop={x:(top.x+endTop.x)/2,y:(top.y+endTop.y)/2}, midBottom={x:(bottom.x+endBottom.x)/2,y:(bottom.y+endBottom.y)/2};
-    ctx.strokeStyle="rgb(20 29 31 / 65%)"; ctx.beginPath(); ctx.moveTo(midTop.x,midTop.y); ctx.lineTo(midBottom.x,midBottom.y); ctx.stroke();
-    ctx.fillStyle="#1b2628"; for (const q of [top,endTop]) ctx.fillRect(Math.round(q.x-1*this.#dpr),Math.round(q.y+7*this.#dpr),2*this.#dpr,2*this.#dpr);
-    ctx.fillStyle="rgb(117 89 55 / 32%)"; ctx.fillRect(Math.round(midBottom.x-5*this.#dpr),Math.round(midBottom.y-4*this.#dpr),10*this.#dpr,2*this.#dpr);
+    const endCapTop = side === "north" ? this.#iso(x + 1, y, 1.25) : this.#iso(x, y + 1, 1.25);
+
+    this.#polygon([top, endTop, endBottom, bottom], side === "north" ? style.north : style.west, "#171f22");
+
+    // A dark top cap gives the wall actual thickness instead of a paper-thin vertical plane.
+    this.#polygon([capTop, endCapTop, endTop, top], "#283337", "#141c1f");
+
+    const ctx = this.#context;
+    const lerpPoint = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+    const leftUpper = lerpPoint(top, bottom, .22);
+    const rightUpper = lerpPoint(endTop, endBottom, .22);
+    const leftLower = lerpPoint(top, bottom, .82);
+    const rightLower = lerpPoint(endTop, endBottom, .82);
+
+    // Horizontal rails frame each wall module.
+    ctx.strokeStyle = style.trim;
+    ctx.globalAlpha = .42;
+    ctx.lineWidth = Math.max(1, this.#dpr);
+    ctx.beginPath();
+    ctx.moveTo(leftUpper.x, leftUpper.y);
+    ctx.lineTo(rightUpper.x, rightUpper.y);
+    ctx.moveTo(leftLower.x, leftLower.y);
+    ctx.lineTo(rightLower.x, rightLower.y);
+    ctx.stroke();
+
+    // Two large panels per tile are more believable than a seam every few pixels.
+    const midTop = lerpPoint(top, endTop, .5);
+    const midBottom = lerpPoint(bottom, endBottom, .5);
+    ctx.strokeStyle = "rgb(15 23 25 / 72%)";
+    ctx.globalAlpha = 1;
+    ctx.beginPath();
+    ctx.moveTo(midTop.x, midTop.y);
+    ctx.lineTo(midBottom.x, midBottom.y);
+    ctx.stroke();
+
+    // Recessed lower plinth visually anchors the wall into the floor.
+    const baseLeft = lerpPoint(top, bottom, .88);
+    const baseRight = lerpPoint(endTop, endBottom, .88);
+    this.#polygon([baseLeft, baseRight, endBottom, bottom], "#263236", "#151d20");
+
+    // Muted sector accent: enough identity to differentiate rooms without bright gamey stripes.
+    const accentLeft = lerpPoint(top, bottom, .69);
+    const accentRight = lerpPoint(endTop, endBottom, .69);
+    ctx.strokeStyle = style.accent;
+    ctx.globalAlpha = .34;
+    ctx.lineWidth = Math.max(1, 2 * this.#dpr);
+    ctx.beginPath();
+    ctx.moveTo(accentLeft.x, accentLeft.y);
+    ctx.lineTo(accentRight.x, accentRight.y);
+    ctx.stroke();
+
+    // Sparse bolts/brackets at structural joints.
+    ctx.globalAlpha = .75;
+    ctx.fillStyle = "#172124";
+    for (const point of [
+      lerpPoint(top, bottom, .3),
+      lerpPoint(endTop, endBottom, .3),
+      lerpPoint(top, bottom, .73),
+      lerpPoint(endTop, endBottom, .73)
+    ]) {
+      ctx.fillRect(
+        Math.round(point.x - this.#dpr),
+        Math.round(point.y - this.#dpr),
+        2 * this.#dpr,
+        2 * this.#dpr
+      );
+    }
+
+    // Very restrained grime near the base keeps pristine repeated modules from looking synthetic.
+    if ((x * 7 + y * 11) % 4 === 0) {
+      const grime = lerpPoint(midTop, midBottom, .86);
+      ctx.fillStyle = "rgb(91 69 49 / 22%)";
+      ctx.fillRect(
+        Math.round(grime.x - 5 * this.#dpr),
+        Math.round(grime.y - this.#dpr),
+        10 * this.#dpr,
+        2 * this.#dpr
+      );
+    }
+    ctx.globalAlpha = 1;
   }
 
   #drawObstacle(item) {
