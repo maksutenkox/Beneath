@@ -1,5 +1,10 @@
 import { floorAt } from "../map/ShelterMap.js";
 import { PixelSpriteLibrary } from "./PixelSpriteLibrary.js";
+import { CharacterSpriteSheet } from './CharacterSpriteSheet.js';
+import { CharacterSpriteStack } from './CharacterSpriteStack.js';
+import { ResidentSpriteSheet } from './ResidentSpriteSheet.js';
+import { EnvironmentAtlas } from './EnvironmentAtlas.js';
+import { MaterialAtlas } from './MaterialAtlas.js';
 
 const PALETTE = {
   central: ["#293437", "#283336"], living: ["#393e37", "#373c35"],
@@ -22,6 +27,7 @@ const WALL_STYLE = {
 };
 
 export class IsometricScene {
+  #heroine; #residents; #environment; #materials;
   #canvas; #context; #map; #sectorStates; #lighting; #staticEntities; #orderedFloors; #sprites; #dpr = 1; #tileWidth = 60; #tileHeight = 30; #originX = 0; #originY = 0; #sceneTime = 0;
 
   constructor(canvas, map, sectorStates, lighting) {
@@ -30,6 +36,11 @@ export class IsometricScene {
     this.#sectorStates = sectorStates;
     this.#lighting = lighting;
     this.#sprites = new PixelSpriteLibrary();
+    this.#heroine = new CharacterSpriteStack({ baseSheet: new CharacterSpriteSheet({url:new URL('../assets/characters/heroine/heroine.png', import.meta.url).href}) });
+    this.#heroine.load();
+    this.#residents = new ResidentSpriteSheet();
+    this.#environment = new EnvironmentAtlas();
+    this.#materials = new MaterialAtlas();
     this.#staticEntities = [
       ...map.obstacles.map((item) => ({ item, entity: "obstacle" })),
       ...map.doors.map((item) => ({ item, entity: "door" })),
@@ -92,10 +103,11 @@ export class IsometricScene {
       const pulse = profile.flicker ? (.72 + Math.max(0, Math.sin(this.#sceneTime * 8 + light.x)) * .28) : 1;
       const p = this.#iso(light.x + .5, light.y + .5, .05);
       const radius=this.#tileWidth*2.15;
-      const gradient=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,radius);
+      ctx.save(); ctx.translate(p.x,p.y); ctx.scale(1,.48);
+      const gradient=ctx.createRadialGradient(0,0,0,0,0,radius);
       gradient.addColorStop(0,profile.color); gradient.addColorStop(.28,profile.color); gradient.addColorStop(1,"rgb(0 0 0 / 0%)");
       ctx.globalAlpha=profile.intensity*pulse*.62; ctx.fillStyle=gradient;
-      ctx.save(); ctx.translate(p.x,p.y); ctx.scale(1,.48); ctx.beginPath(); ctx.arc(0,0,radius,0,Math.PI*2); ctx.fill(); ctx.restore();
+      ctx.beginPath(); ctx.arc(0,0,radius,0,Math.PI*2); ctx.fill(); ctx.restore();
       ctx.globalAlpha=profile.intensity*pulse;
       ctx.fillStyle=profile.color; ctx.shadowColor=profile.color; ctx.shadowBlur=10*this.#dpr;
       ctx.fillRect(Math.round(p.x-5*this.#dpr),Math.round(p.y-this.#tileHeight*1.15),10*this.#dpr,2*this.#dpr); ctx.shadowBlur=0;
@@ -170,6 +182,7 @@ export class IsometricScene {
     const seed = tile.x * 31 + tile.y * 17;
     const base = PALETTE[tile.zone][(tile.x + tile.y) & 1];
     this.#polygon(corners, base);
+    this.#materials.floor(this.#context,tile.zone,p.x,p.y,this.#tileWidth,this.#tileHeight);
 
     const ctx = this.#context;
     ctx.save();
@@ -322,6 +335,7 @@ export class IsometricScene {
     const endCapTop = side === "north" ? this.#iso(x + 1, y, 1.25) : this.#iso(x, y + 1, 1.25);
 
     this.#polygon([top, endTop, endBottom, bottom], side === "north" ? style.north : style.west, "#171f22");
+    this.#materials.wallFace(this.#context,top,endTop,bottom);
 
     // A dark top cap gives the wall actual thickness instead of a paper-thin vertical plane.
     this.#polygon([capTop, endCapTop, endTop, top], "#283337", "#141c1f");
@@ -404,6 +418,12 @@ export class IsometricScene {
   #drawObstacle(item) {
     const p = this.#iso(item.x + .5, item.y + .5);
     if (item.kind === "generator") p.y += Math.sin(this.#sceneTime * 12 + item.x) * .7 * this.#dpr;
+    const rasterSize=(['wire','rubble','debris'].includes(item.kind)?64:80)*this.#dpr;
+    if(this.#environment.ready) {
+      const ctx=this.#context, groundY=p.y+this.#tileHeight*.4;
+      ctx.save(); ctx.fillStyle='rgb(0 0 0 / 40%)'; ctx.beginPath(); ctx.ellipse(p.x,groundY,this.#tileWidth*.25,this.#tileHeight*.1,0,0,Math.PI*2);ctx.fill();ctx.restore();
+      if(this.#environment.draw(ctx,item.kind,p.x,groundY,rasterSize)) return;
+    }
 
     const zone = floorAt(this.#map, Math.floor(item.x), Math.floor(item.y))?.zone;
     const detailed = zone === "central" || zone === "living";
@@ -455,6 +475,7 @@ export class IsometricScene {
     const p = this.#iso(item.x, item.y);
     const ctx = this.#context;
     const s = this.#dpr;
+    if(['table','cabinet'].includes(item.kind) && this.#environment.draw(ctx,item.kind,p.x,p.y+this.#tileHeight*.34,64*s)) return;
     const castsShadow = ["table", "cabinet", "shelf", "bench", "stool"].includes(item.kind);
     const benchmarkZone = item.zone === "central" || item.zone === "living";
     const detailedSprite = benchmarkZone
@@ -651,6 +672,8 @@ export class IsometricScene {
       ctx.fillStyle = panel;
       ctx.fillRect(-innerWidth / 2 - shift, innerTop, half + 1, innerHeight);
       ctx.fillRect(shift, innerTop, half + 1, innerHeight);
+      this.#materials.panel(ctx,-innerWidth/2-shift,innerTop,half+1,innerHeight);
+      this.#materials.panel(ctx,shift,innerTop,half+1,innerHeight);
 
       ctx.fillStyle = "#2c373a";
       ctx.fillRect(-innerWidth / 2 + 4 * this.#dpr - shift, innerTop + 4 * this.#dpr, half - 8 * this.#dpr, 4 * this.#dpr);
@@ -673,6 +696,7 @@ export class IsometricScene {
       const leafX = -innerWidth / 2 - shift;
       ctx.fillStyle = panel;
       ctx.fillRect(leafX, innerTop, innerWidth, innerHeight);
+      this.#materials.panel(ctx,leafX,innerTop,innerWidth,innerHeight);
 
       // Recessed service panel and strengthening ribs.
       ctx.fillStyle = "#3c4848";
@@ -767,7 +791,9 @@ export class IsometricScene {
     ctx.save(); ctx.imageSmoothingEnabled = false;
     ctx.fillStyle = "rgb(0 0 0 / 42%)";
     ctx.beginPath(); ctx.ellipse(p.x, footY, this.#tileWidth * .16, this.#tileHeight * .075, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.drawImage(sprite, Math.round(p.x - w / 2), Math.round(footY - h), w, h);
+    if (!this.#heroine.draw(ctx, {state:walking?'walk':'idle',direction,time:player.animationTime,x:p.x,y:footY,scale})) {
+      ctx.drawImage(sprite, Math.round(p.x - w / 2), Math.round(footY - h), w, h);
+    }
     ctx.restore();
   }
 
@@ -785,7 +811,9 @@ export class IsometricScene {
     ctx.save(); ctx.imageSmoothingEnabled = false;
     ctx.fillStyle = "rgb(0 0 0 / 36%)";
     ctx.beginPath(); ctx.ellipse(p.x, footY, this.#tileWidth * .145, this.#tileHeight * .065, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.drawImage(sprite, Math.round(p.x - w / 2), Math.round(footY - h + (sitting ? 5 * scale : 0)), w, h);
+    if (!this.#residents.draw(ctx,npc,p.x,footY,scale)) {
+      ctx.drawImage(sprite, Math.round(p.x - w / 2), Math.round(footY - h + (sitting ? 5 * scale : 0)), w, h);
+    }
     if (npc.activity === "chat") {
       ctx.fillStyle = "#d7dfca"; ctx.fillRect(p.x+8*scale,footY-h-5*scale,10*scale,6*scale);
       ctx.fillStyle = "#394443"; ctx.fillRect(p.x+11*scale,footY-h-3*scale,scale,scale); ctx.fillRect(p.x+14*scale,footY-h-3*scale,scale,scale);

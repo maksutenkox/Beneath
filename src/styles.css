@@ -49,6 +49,16 @@ body { background: #080c0f; }
   letter-spacing: .22em;
 }
 
+/* BENEATH: weathered steel, copper typography and restrained amber controls. */
+.scene-label, .resource-hud, .repair-panel, .status-toast {
+  background-color: #10191c;
+  background-image: repeating-linear-gradient(0deg, transparent 0 3px, rgb(190 168 120 / 3%) 3px 4px);
+  border-color: #58615c;
+  box-shadow: inset 0 0 0 2px #151e20, 3px 4px 0 rgb(0 0 0 / 45%);
+}
+.scene-label .eyebrow { color: #c39a70; font-size: 12px; font-weight: bold; letter-spacing: .15em; text-shadow: 1px 2px #30291f; }
+.resource-hud b { color: #dac39e; }
+
 .scene-label h1 { margin: 3px 0; font-size: 14px; }
 .scene-label p { margin: 0; color: #737f7e; font-size: 8px; }
 

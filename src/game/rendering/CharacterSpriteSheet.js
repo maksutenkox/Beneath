@@ -24,6 +24,10 @@ export class CharacterSpriteSheet {
 
     this.loading = new Promise((resolve) => {
       image.onload = () => {
+        const requiredColumns = Math.max(...Object.values(this.clips).map(clip => clip.startColumn + clip.frames));
+        if (image.naturalWidth < requiredColumns * this.frameWidth || image.naturalHeight < 8 * this.frameHeight) {
+          this.ready = false; this.failed = true; resolve(false); return;
+        }
         this.ready = true;
         this.failed = false;
         resolve(true);
