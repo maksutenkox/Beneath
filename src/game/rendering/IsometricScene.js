@@ -260,6 +260,43 @@ export class IsometricScene {
     } else if (["trash", "damage"].includes(item.kind)) {
       ctx.fillStyle = item.kind === "trash" ? "#49443e" : "#6c3f38";
       ctx.fillRect(-5 * s, -2 * s, 4 * s, 3 * s); ctx.fillRect(2 * s, 1 * s, 5 * s, 2 * s);
+    } else if (item.kind === "shelf") {
+      ctx.fillStyle = "#303a3b";
+      ctx.fillRect(-10 * s, -17 * s, 20 * s, 19 * s);
+      ctx.fillStyle = "#667170";
+      ctx.fillRect(-9 * s, -15 * s, 18 * s, 2 * s);
+      ctx.fillRect(-9 * s, -8 * s, 18 * s, 2 * s);
+      ctx.fillRect(-9 * s, -1 * s, 18 * s, 2 * s);
+      ctx.fillStyle = "#755d41";
+      ctx.fillRect(-7 * s, -13 * s, 5 * s, 4 * s);
+      ctx.fillStyle = "#58605a";
+      ctx.fillRect(1 * s, -6 * s, 6 * s, 4 * s);
+    } else if (item.kind === "bench") {
+      ctx.fillStyle = "#59615b";
+      ctx.fillRect(-12 * s, -6 * s, 24 * s, 6 * s);
+      ctx.fillStyle = "#2c3434";
+      ctx.fillRect(-10 * s, 0, 3 * s, 7 * s);
+      ctx.fillRect(7 * s, 0, 3 * s, 7 * s);
+      ctx.fillStyle = "#78745d";
+      ctx.fillRect(-10 * s, -5 * s, 20 * s, 2 * s);
+    } else if (item.kind === "stool") {
+      ctx.fillStyle = "#6c6655";
+      ctx.fillRect(-5 * s, -5 * s, 10 * s, 5 * s);
+      ctx.fillStyle = "#31393a";
+      ctx.fillRect(-4 * s, 0, 2 * s, 6 * s);
+      ctx.fillRect(2 * s, 0, 2 * s, 6 * s);
+    } else if (item.kind === "wallpanel") {
+      ctx.fillStyle = "#263133";
+      ctx.fillRect(-8 * s, -16 * s, 16 * s, 18 * s);
+      ctx.strokeStyle = "#667275";
+      ctx.lineWidth = s;
+      ctx.strokeRect(-8 * s, -16 * s, 16 * s, 18 * s);
+      ctx.fillStyle = "#6ca89c";
+      ctx.fillRect(-5 * s, -12 * s, 7 * s, 3 * s);
+      ctx.fillStyle = "#c08b42";
+      ctx.fillRect(4 * s, -12 * s, 2 * s, 2 * s);
+      ctx.fillStyle = "#151d1e";
+      ctx.fillRect(-5 * s, -6 * s, 11 * s, 5 * s);
     } else if (item.kind === "lamp") {
       const on = Math.sin(this.#sceneTime * 2.3 + item.x) > -.75;
       ctx.fillStyle = on ? "#ddd18b" : "#625f4d"; ctx.shadowColor = "#e9d98d"; ctx.shadowBlur = on ? 8 * s : 0;
@@ -282,29 +319,105 @@ export class IsometricScene {
   }
 
   #drawDoor(item, sealed) {
-    const p = this.#iso(item.x + .5, item.y + .5, .08); const ctx = this.#context;
-    const progress = sealed ? 0 : (item.progress ?? (item.open ? 1 : 0));
-    const bulkhead = item.doorKind === "bulkhead";
-    const thickness = (bulkhead ? 11 : 7) * this.#dpr;
-    const totalWidth = this.#tileWidth * (bulkhead ? .82 : .62);
-    const remaining = Math.max(0, 1 - progress);
-    ctx.save(); ctx.translate(p.x, p.y); ctx.transform(1, ["north", "south"].includes(item.orientation) ? .5 : -.5, 0, 1, 0, 0);
-    ctx.fillStyle = item.state === "locked" ? "#7b433c" : item.state === "jammed" ? "#8b6040" : bulkhead ? "#536167" : "#69745d";
-    if (bulkhead) {
-      const slab = totalWidth * remaining / 2;
-      ctx.fillRect(-totalWidth / 2, -thickness / 2, slab, thickness);
-      ctx.fillRect(totalWidth / 2 - slab, -thickness / 2, slab, thickness);
-      ctx.fillStyle = "#252d30";
-      ctx.fillRect(-2 * this.#dpr, -thickness / 2, 4 * this.#dpr, thickness);
+    const p = this.#iso(item.x + .5, item.y + .5, .08);
+    const ctx = this.#context;
+    const progress = sealed ? 0 : Math.max(0, Math.min(1, item.progress ?? (item.open ? 1 : 0)));
+    const hermetic = item.visualStyle === "hermetic";
+    const totalWidth = this.#tileWidth * (hermetic ? .88 : .66);
+    const frameHeight = (hermetic ? 30 : 22) * this.#dpr;
+    const postWidth = (hermetic ? 6 : 3) * this.#dpr;
+    const beamHeight = (hermetic ? 6 : 4) * this.#dpr;
+    const sillHeight = (hermetic ? 4 : 2) * this.#dpr;
+    const innerWidth = totalWidth - postWidth * 2;
+    const innerTop = -frameHeight + beamHeight;
+    const innerHeight = frameHeight - beamHeight - sillHeight;
+    const locked = item.state === "locked";
+    const jammed = item.state === "jammed";
+
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.transform(1, ["north", "south"].includes(item.orientation) ? .5 : -.5, 0, 1, 0, 0);
+
+    // Threshold and portal frame make room transitions read as actual doorways.
+    ctx.fillStyle = "#171e20";
+    ctx.fillRect(-totalWidth / 2 - 2 * this.#dpr, -sillHeight, totalWidth + 4 * this.#dpr, sillHeight + 2 * this.#dpr);
+    ctx.fillStyle = hermetic ? "#48575b" : "#505d5d";
+    ctx.fillRect(-totalWidth / 2, -frameHeight, postWidth, frameHeight);
+    ctx.fillRect(totalWidth / 2 - postWidth, -frameHeight, postWidth, frameHeight);
+    ctx.fillRect(-totalWidth / 2, -frameHeight, totalWidth, beamHeight);
+    ctx.fillStyle = hermetic ? "#273235" : "#2d3839";
+    ctx.fillRect(-totalWidth / 2 + this.#dpr, -frameHeight + this.#dpr, totalWidth - 2 * this.#dpr, 2 * this.#dpr);
+
+    // Door leaf animation is clipped inside the frame instead of shrinking like a floor bar.
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(-innerWidth / 2, innerTop, innerWidth, innerHeight);
+    ctx.clip();
+
+    const panel = locked ? "#6e4643" : jammed ? "#71523d" : hermetic ? "#5d696d" : "#66706d";
+    if (hermetic) {
+      const half = innerWidth / 2;
+      const shift = progress * half;
+      ctx.fillStyle = panel;
+      ctx.fillRect(-innerWidth / 2 - shift, innerTop, half + 1, innerHeight);
+      ctx.fillRect(shift, innerTop, half + 1, innerHeight);
+      ctx.fillStyle = "#20292b";
+      ctx.fillRect(-2 * this.#dpr - shift, innerTop, 4 * this.#dpr, innerHeight);
+      ctx.fillRect(shift - 2 * this.#dpr, innerTop, 4 * this.#dpr, innerHeight);
     } else {
-      ctx.fillRect(-totalWidth / 2, -thickness / 2, totalWidth * remaining, thickness);
+      const shift = progress * innerWidth;
+      ctx.fillStyle = panel;
+      ctx.fillRect(-innerWidth / 2 - shift, innerTop, innerWidth, innerHeight);
+      ctx.fillStyle = "#303a39";
+      ctx.fillRect(-innerWidth / 2 + 4 * this.#dpr - shift, innerTop + 4 * this.#dpr, 2 * this.#dpr, innerHeight - 8 * this.#dpr);
+      ctx.fillStyle = "#9aa08a";
+      ctx.fillRect(innerWidth * .24 - shift, innerTop + innerHeight * .52, 4 * this.#dpr, 2 * this.#dpr);
     }
-    ctx.strokeStyle = item.state === "locked" || item.state === "jammed" ? "#d27155" : "#a9b58b";
+
+    // Panel seams and damage stay readable at gameplay scale.
+    ctx.strokeStyle = "rgb(28 36 37 / 80%)";
     ctx.lineWidth = this.#dpr;
-    ctx.strokeRect(-totalWidth / 2, -thickness / 2, totalWidth, thickness);
-    if (item.doorKind === "damaged") {
-      ctx.strokeStyle = "#27211f"; ctx.beginPath(); ctx.moveTo(-totalWidth * .25, -thickness); ctx.lineTo(0, thickness); ctx.lineTo(totalWidth * .2, -thickness); ctx.stroke();
+    for (let y = innerTop + 6 * this.#dpr; y < innerTop + innerHeight; y += 8 * this.#dpr) {
+      ctx.beginPath(); ctx.moveTo(-innerWidth / 2, y); ctx.lineTo(innerWidth / 2, y); ctx.stroke();
     }
+    if (item.doorKind === "damaged") {
+      ctx.strokeStyle = "#2b211f";
+      ctx.lineWidth = 2 * this.#dpr;
+      ctx.beginPath();
+      ctx.moveTo(-innerWidth * .28, innerTop + innerHeight * .2);
+      ctx.lineTo(innerWidth * .04, innerTop + innerHeight * .58);
+      ctx.lineTo(innerWidth * .26, innerTop + innerHeight * .3);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // State light lives on the frame, not on the moving door leaf.
+    const indicator = locked ? "#c85d4d" : jammed ? "#d08a45" : "#8faf74";
+    ctx.fillStyle = "#1a2223";
+    ctx.fillRect(totalWidth / 2 + this.#dpr, -frameHeight + 7 * this.#dpr, 5 * this.#dpr, 8 * this.#dpr);
+    ctx.fillStyle = indicator;
+    ctx.fillRect(totalWidth / 2 + 2 * this.#dpr, -frameHeight + 8 * this.#dpr, 3 * this.#dpr, 3 * this.#dpr);
+
+    if (hermetic) {
+      // Only the external exit gets the unmistakable heavy pressure-door treatment.
+      ctx.strokeStyle = "#8b7952";
+      ctx.lineWidth = 2 * this.#dpr;
+      ctx.strokeRect(-totalWidth / 2 - 2 * this.#dpr, -frameHeight - 2 * this.#dpr, totalWidth + 4 * this.#dpr, frameHeight + 3 * this.#dpr);
+      ctx.fillStyle = "#b08b3f";
+      for (const x of [-.36, .36]) ctx.fillRect(x * totalWidth - 2 * this.#dpr, -frameHeight - 4 * this.#dpr, 4 * this.#dpr, 3 * this.#dpr);
+    }
+
+    if (sealed) {
+      ctx.strokeStyle = "#8b6040";
+      ctx.lineWidth = 4 * this.#dpr;
+      ctx.beginPath();
+      ctx.moveTo(-innerWidth * .42, innerTop + innerHeight * .18);
+      ctx.lineTo(innerWidth * .42, innerTop + innerHeight * .82);
+      ctx.moveTo(innerWidth * .42, innerTop + innerHeight * .18);
+      ctx.lineTo(-innerWidth * .42, innerTop + innerHeight * .82);
+      ctx.stroke();
+    }
+
     ctx.restore();
   }
 
