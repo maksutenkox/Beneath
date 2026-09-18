@@ -214,6 +214,7 @@ export class IsometricScene {
     ctx.fillStyle="rgb(0 0 0 / 45%)"; ctx.beginPath(); ctx.ellipse(p.x,p.y+this.#tileHeight*.33,this.#tileWidth*.3,this.#tileHeight*.15,0,0,Math.PI*2); ctx.fill();
     ctx.drawImage(sprite, Math.round(p.x-width/2), Math.round(p.y-height+this.#tileHeight*.38), width, height);
     ctx.restore();
+  }
 
   #drawHighlight(item, time = 0) {
     const p = this.#iso(item.x + .5, item.y + .5, .02);
