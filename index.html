@@ -3,51 +3,37 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
-    <meta name="theme-color" content="#0b1014" />
-    <title>Убежище</title>
+    <meta name="theme-color" content="#070b0e" />
+    <meta name="screen-orientation" content="portrait" />
+    <title>Below Protocol</title>
     <link rel="stylesheet" href="./src/styles.css" />
   </head>
   <body>
-    <main id="app" class="game-shell" aria-label="Убежище — тестовая сцена">
-      <canvas id="game-canvas" aria-label="Изометрическая карта убежища"></canvas>
-      <section class="scene-label" aria-live="polite">
-        <span class="eyebrow">BENEATH</span>
-        <h1>Убежище</h1>
-        <p id="platform-status">Запуск…</p>
+    <main id="app" class="game-shell" aria-label="Below Protocol — безопасный корпоративный этаж">
+      <canvas id="game-canvas" aria-label="Двухмерная игровая сцена, вид сбоку"></canvas>
+      <section class="health-hud" data-hearts aria-label="Здоровье"></section>
+      <section class="system-label" aria-live="polite">
+        <strong>BELOW PROTOCOL</strong><span>SAFE HUB / FLOOR ??</span><small id="platform-status">ЗАПУСК…</small>
       </section>
-      <section class="resource-hud" aria-label="Ресурсы убежища">
-        <span title="Population"><small>POP</small><b data-population>0</b></span>
-        <span title="Food"><small>FOOD</small><b data-resource="food">0</b></span>
-        <span title="Water"><small>WATER</small><b data-resource="water">0</b></span>
-        <span title="Power"><small>POWER</small><b data-resource="power">0</b></span>
-      </section>
-      <aside class="repair-panel" data-repair-panel hidden aria-label="Ремонт сектора">
-        <button class="repair-panel__close" data-repair-close aria-label="Закрыть">×</button>
-        <span class="eyebrow">ВОССТАНОВЛЕНИЕ СЕКТОРА</span>
-        <h2 data-repair-name>Сектор</h2>
-        <p>Состояние: <strong data-repair-status>DAMAGED</strong></p>
-        <h3>Необходимые материалы</h3>
-        <ul data-repair-list></ul>
-        <button class="repair-panel__action" data-repair-action>Ремонтировать</button>
+      <aside class="workbench-panel" data-workbench-panel hidden aria-label="Оружейный верстак">
+        <span class="panel-kicker">WEAPON WORKBENCH</span>
+        <h2 data-workbench-weapon>Current Weapon</h2>
+        <p data-workbench-stats>LVL 1 · DMG 1</p>
+        <button data-workbench-upgrade>UPGRADE</button>
+        <button data-workbench-modify>MODIFY</button>
+        <button class="panel-close" data-workbench-close>CLOSE</button>
       </aside>
       <div class="status-toast" data-status-toast hidden role="status"></div>
       <div class="mobile-controls" aria-label="Мобильное управление">
-        <div class="analog-stick" data-stick role="application" aria-label="Аналоговый стик движения">
-          <div class="analog-stick__ring"></div>
-          <div class="analog-stick__knob" data-stick-knob></div>
+        <div class="move-controls">
+          <button class="control-button control-button--move" data-control="left" aria-label="Двигаться влево">←</button>
+          <button class="control-button control-button--move" data-control="right" aria-label="Двигаться вправо">→</button>
         </div>
-        <button class="interaction-button" data-interact aria-label="Взаимодействовать" disabled>
-          <span class="interaction-button__key">E</span>
-          <span data-interact-label>Действие</span>
-        </button>
+        <button class="control-button control-button--jump" data-control="jump" aria-label="Прыжок">↑<small>JUMP</small></button>
+        <button class="control-button control-button--attack" data-control="attack" aria-label="Атака"><span>⌁</span><small>ATTACK</small></button>
+        <button class="interaction-button" data-control="interact" aria-label="Взаимодействовать" hidden disabled><b>E</b><span data-interact-label>ВЗАИМОДЕЙСТВОВАТЬ</span></button>
       </div>
-      <aside class="orientation-gate">
-        <div>
-          <span aria-hidden="true">↻</span>
-          <strong>Поверните устройство</strong>
-          <p>Игра работает в горизонтальной ориентации.</p>
-        </div>
-      </aside>
+      <aside class="landscape-hint"><strong>PORTRAIT MODE</strong><span>Поверните устройство вертикально</span></aside>
     </main>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script type="module" src="./src/main.js"></script>

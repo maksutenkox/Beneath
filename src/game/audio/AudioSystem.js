@@ -8,10 +8,10 @@ export const DEFAULT_AUDIO_LEVELS = Object.freeze({
 });
 
 export const AUDIO_CUES = Object.freeze({
-  footstep: { category: "footsteps" }, doorMove: { category: "doors" },
-  equipmentUse: { category: "equipment" }, uiAction: { category: "ui" },
-  npcTalk: { category: "npc" }, repair: { category: "effects" },
-  bunkerHum: { category: "ambient" }, bunkerTheme: { category: "music" }
+  footstep: { category: "footsteps" }, jump: { category: "effects" }, land: { category: "effects" },
+  attack: { category: "effects" }, hit: { category: "effects" }, hurt: { category: "effects" },
+  equipmentUse: { category: "equipment" }, upgrade: { category: "equipment" }, uiAction: { category: "ui" },
+  officeHum: { category: "ambient" }, alarmPulse: { category: "ambient" }, hubTheme: { category: "music" }
 });
 
 export class AudioSystem {

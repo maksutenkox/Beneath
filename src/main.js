@@ -1,60 +1,42 @@
 import { GameCore } from "./game/core/GameCore.js";
-import { IsometricScene } from "./game/rendering/IsometricScene.js";
-import { SaveStore } from "./game/save/SaveStore.js";
-import { shelterMap } from "./game/map/ShelterMap.js";
-import { CollisionMap } from "./game/physics/CollisionMap.js";
+import { hubMap } from "./game/map/HubMap.js";
+import { SideViewCollisionWorld } from "./game/physics/SideViewCollisionWorld.js";
+import { PlayerController } from "./game/player/PlayerController.js";
+import { SideViewCamera } from "./game/camera/SideViewCamera.js";
+import { HubInteractionSystem } from "./game/interaction/HubInteractionSystem.js";
+import { MeleeSystem } from "./game/combat/MeleeSystem.js";
+import { HealthSystem } from "./game/health/HealthSystem.js";
+import { HubScene } from "./game/rendering/HubScene.js";
 import { InputController } from "./game/input/InputController.js";
-import { CameraController } from "./game/camera/CameraController.js";
-import { InteractionSystem } from "./game/interaction/InteractionSystem.js";
-import { DoorSystem } from "./game/doors/DoorSystem.js";
-import { SectorStateSystem } from "./game/sectors/SectorStateSystem.js";
-import { ResourceHud } from "./platform/ui/ResourceHud.js";
-import { RepairPanel } from "./platform/ui/RepairPanel.js";
-import { RepairSystem } from "./game/repair/RepairSystem.js";
-import { NpcSystem } from "./game/npc/NpcSystem.js";
-import { PopulationSystem } from "./game/population/PopulationSystem.js";
+import { SaveStore } from "./game/save/SaveStore.js";
+import { HeartsHud } from "./platform/ui/HeartsHud.js";
+import { WorkbenchPanel } from "./platform/ui/WorkbenchPanel.js";
 import { StatusToast } from "./platform/ui/StatusToast.js";
-import { LightingSystem } from "./game/lighting/LightingSystem.js";
 import { AudioSystem } from "./game/audio/AudioSystem.js";
 import { WebAudioOutput } from "./platform/audio/WebAudioOutput.js";
 import { createPlatform } from "./platform/createPlatform.js";
 
-const canvas = document.querySelector("#game-canvas");
-const platformStatus = document.querySelector("#platform-status");
-const platform = createPlatform();
-const touchUi = platform.name === "Telegram Mini App"
-  || (navigator.maxTouchPoints ?? 0) > 0
-  || window.matchMedia?.("(pointer: coarse)")?.matches;
-document.documentElement.classList.toggle("touch-ui", Boolean(touchUi));
-document.documentElement.classList.toggle("desktop-ui", !touchUi);
-const sectorStates = new SectorStateSystem(shelterMap);
-const collisionMap = new CollisionMap(shelterMap, sectorStates);
-const input = new InputController(document);
-const camera = new CameraController(shelterMap);
-const doors = new DoorSystem(shelterMap.doors);
-const interactions = new InteractionSystem(shelterMap, doors, sectorStates);
-const resourceHud = new ResourceHud(document);
-const repairPanel = new RepairPanel(document);
-const repairs = new RepairSystem(sectorStates, shelterMap);
-const npcs = new NpcSystem(shelterMap.npcs, collisionMap, sectorStates);
-const population = new PopulationSystem();
-const statusToast = new StatusToast(document);
-const lighting = new LightingSystem(sectorStates);
+const canvas = document.querySelector("#game-canvas"), platform = createPlatform();
+const touchUi = platform.name === "Telegram Mini App" || (navigator.maxTouchPoints ?? 0) > 0 || window.matchMedia?.("(pointer: coarse)")?.matches;
+document.documentElement.classList.toggle("touch-ui", Boolean(touchUi)); document.documentElement.classList.toggle("desktop-ui", !touchUi);
+
+const collisionWorld = new SideViewCollisionWorld(hubMap.colliders);
+const renderer = new HubScene(canvas, hubMap);
+const input = new InputController(document, window);
 const audio = new AudioSystem(new WebAudioOutput(window));
-const renderer = new IsometricScene(canvas, shelterMap, sectorStates, lighting);
-const saveStore = new SaveStore(window.localStorage);
-const game = new GameCore({ renderer, saveStore, collisionMap, input, camera, interactions, doors, resourceHud, repairPanel, repairs, npcs, population, statusToast, audio });
+const game = new GameCore({
+  map: hubMap, renderer, saveStore: new SaveStore(window.localStorage), input,
+  playerController: new PlayerController(collisionWorld),
+  camera: new SideViewCamera({ worldWidth: hubMap.width, worldHeight: hubMap.height, floorY: hubMap.floorY }),
+  interactions: new HubInteractionSystem(hubMap.interactables), melee: new MeleeSystem(), health: new HealthSystem(),
+  heartsHud: new HeartsHud(document), workbenchPanel: new WorkbenchPanel(document), statusToast: new StatusToast(document), audio
+});
 
-platform.initialize();
-input.initialize();
+platform.initialize(); input.initialize();
+document.querySelector("#platform-status").textContent = platform.name === "Telegram Mini App" ? "TELEGRAM LINK ACTIVE" : "HUB SYSTEM ONLINE";
 const unlockAudio = () => audio.unlock();
-window.addEventListener("pointerdown", unlockAudio, { once: true, passive: true });
-window.addEventListener("keydown", unlockAudio, { once: true });
-platformStatus.textContent = "СИСТЕМА АКТИВНА";
-
+window.addEventListener("pointerdown", unlockAudio, { once: true, passive: true }); window.addEventListener("keydown", unlockAudio, { once: true });
 const removePauseListener = platform.onPause(() => game.save());
-window.addEventListener("resize", () => renderer.resize(), { passive: true });
-window.addEventListener("pagehide", () => game.save(), { passive: true });
+window.addEventListener("resize", () => renderer.resize(), { passive: true }); window.addEventListener("pagehide", () => game.save(), { passive: true });
 window.addEventListener("beforeunload", () => { removePauseListener(); input.destroy(); }, { once: true });
-
 await game.start();

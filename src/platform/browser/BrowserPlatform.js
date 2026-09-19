@@ -3,10 +3,6 @@ export class BrowserPlatform {
 
   initialize() {}
 
-  requestLandscape() {
-    screen.orientation?.lock?.("landscape").catch(() => {});
-  }
-
   onPause(handler) {
     const listener = () => document.visibilityState === "hidden" && handler();
     document.addEventListener("visibilitychange", listener);

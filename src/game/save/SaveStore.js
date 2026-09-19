@@ -1,4 +1,4 @@
-const DEFAULT_KEY = "ubezhishche.save.v1";
+const DEFAULT_KEY = "below-protocol.save.v1";
 
 export class SaveStore {
   constructor(storage, key = DEFAULT_KEY) {
@@ -11,7 +11,7 @@ export class SaveStore {
       const raw = this.storage.getItem(this.key);
       if (!raw) return null;
       const parsed = JSON.parse(raw);
-      return [1, 2].includes(parsed?.version) ? parsed : null;
+      return parsed?.version === 3 ? parsed : null;
     } catch {
       return null;
     }

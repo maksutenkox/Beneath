@@ -1,12 +1,9 @@
 const CUES = {
-  footstep: { frequency: 95, duration: .045, type: "square" },
-  doorMove: { frequency: 68, duration: .18, type: "sawtooth" },
-  equipmentUse: { frequency: 310, duration: .09, type: "square" },
-  uiAction: { frequency: 520, duration: .045, type: "square" },
-  npcTalk: { frequency: 180, duration: .07, type: "triangle" },
-  repair: { frequency: 420, duration: .22, type: "triangle" },
-  bunkerHum: { frequency: 48, duration: .8, type: "sine" },
-  bunkerTheme: { frequency: 110, duration: 1.2, type: "sine" }
+  footstep: { frequency: 72, duration: .055, type: "triangle" },
+  jump: { frequency: 155, duration: .09, type: "sine" }, land: { frequency: 58, duration: .11, type: "triangle" },
+  attack: { frequency: 108, duration: .13, type: "sawtooth" }, hit: { frequency: 63, duration: .16, type: "square" }, hurt: { frequency: 120, duration: .18, type: "sawtooth" },
+  equipmentUse: { frequency: 285, duration: .1, type: "triangle" }, upgrade: { frequency: 390, duration: .22, type: "triangle" }, uiAction: { frequency: 430, duration: .05, type: "sine" },
+  officeHum: { frequency: 46, duration: .9, type: "sine" }, alarmPulse: { frequency: 174, duration: .32, type: "triangle" }, hubTheme: { frequency: 92, duration: 1.4, type: "sine" }
 };
 
 export class WebAudioOutput {

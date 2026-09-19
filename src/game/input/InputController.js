@@ -1,97 +1,43 @@
-const KEY_TO_DIRECTION = {
-  ArrowUp: "north", KeyW: "north", ArrowDown: "south", KeyS: "south",
-  ArrowLeft: "west", KeyA: "west", ArrowRight: "east", KeyD: "east"
-};
+const KEY_BINDINGS = Object.freeze({
+  ArrowLeft: "left", KeyA: "left", ArrowRight: "right", KeyD: "right",
+  Space: "jump", KeyW: "jump", KeyJ: "attack", KeyE: "interact"
+});
 
 export class InputController {
-  constructor(root = document) {
-    this.root = root;
-    this.active = new Set();
-    this.analog = { x: 0, y: 0 };
-    this.bindings = [];
-    this.interactions = 0;
+  constructor(root = document, scope = window) {
+    this.root = root; this.scope = scope; this.held = new Set(); this.pressed = new Map(); this.bindings = [];
   }
-
   initialize() {
-    const keyDown = (event) => {
-      if (event.code === "KeyE" && !event.repeat) { event.preventDefault(); this.interactions += 1; return; }
-      const direction = KEY_TO_DIRECTION[event.code];
-      if (!direction) return;
+    const down = (event) => {
+      const action = KEY_BINDINGS[event.code]; if (!action) return;
       event.preventDefault();
-      this.active.add(direction);
+      if (!event.repeat && !this.held.has(action)) this.#press(action);
+      this.held.add(action);
     };
-    const keyUp = (event) => {
-      const direction = KEY_TO_DIRECTION[event.code];
-      if (direction) this.active.delete(direction);
-    };
-    window.addEventListener("keydown", keyDown);
-    window.addEventListener("keyup", keyUp);
-    this.bindings.push(() => window.removeEventListener("keydown", keyDown), () => window.removeEventListener("keyup", keyUp));
-
-    const stick = this.root.querySelector("[data-stick]");
-    const knob = this.root.querySelector("[data-stick-knob]");
-    let pointerId = null;
-    const updateStick = (event) => {
-      if (event.pointerId !== pointerId) return;
-      const rect = stick.getBoundingClientRect();
-      const radius = rect.width * .34;
-      let x = event.clientX - (rect.left + rect.width / 2);
-      let y = event.clientY - (rect.top + rect.height / 2);
-      const distance = Math.hypot(x, y);
-      if (distance > radius) { x = x / distance * radius; y = y / distance * radius; }
-      const strength = Math.min(1, distance / radius);
-      this.analog = strength < .14 ? { x: 0, y: 0 } : { x: x / radius, y: y / radius };
-      knob.style.transform = `translate(${x}px, ${y}px)`;
-    };
-    const pressStick = (event) => {
-      event.preventDefault();
-      pointerId = event.pointerId;
-      stick.setPointerCapture?.(pointerId);
-      updateStick(event);
-    };
-    const releaseStick = (event) => {
-      if (event.pointerId !== pointerId) return;
-      pointerId = null;
-      this.analog = { x: 0, y: 0 };
-      knob.style.transform = "translate(0, 0)";
-    };
-    stick.addEventListener("pointerdown", pressStick);
-    stick.addEventListener("pointermove", updateStick);
-    stick.addEventListener("pointerup", releaseStick);
-    stick.addEventListener("pointercancel", releaseStick);
-
-    const action = this.root.querySelector("[data-interact]");
-    const pressAction = (event) => { event.preventDefault(); if (!action.disabled) this.interactions += 1; };
-    action.addEventListener("pointerdown", pressAction);
-    this.bindings.push(
-      () => stick.removeEventListener("pointerdown", pressStick),
-      () => stick.removeEventListener("pointermove", updateStick),
-      () => stick.removeEventListener("pointerup", releaseStick),
-      () => stick.removeEventListener("pointercancel", releaseStick),
-      () => action.removeEventListener("pointerdown", pressAction)
-    );
+    const up = (event) => { const action = KEY_BINDINGS[event.code]; if (action) { event.preventDefault(); this.held.delete(action); } };
+    this.scope.addEventListener("keydown", down); this.scope.addEventListener("keyup", up);
+    this.bindings.push(() => this.scope.removeEventListener("keydown", down), () => this.scope.removeEventListener("keyup", up));
+    for (const button of this.root.querySelectorAll?.("[data-control]") ?? []) {
+      const action = button.dataset.control, pointerIds = new Set();
+      const press = (event) => { event.preventDefault(); pointerIds.add(event.pointerId); button.setPointerCapture?.(event.pointerId); if (!this.held.has(action)) this.#press(action); this.held.add(action); };
+      const release = (event) => { if (!pointerIds.has(event.pointerId)) return; pointerIds.delete(event.pointerId); if (!pointerIds.size) this.held.delete(action); };
+      button.addEventListener("pointerdown", press); button.addEventListener("pointerup", release); button.addEventListener("pointercancel", release); button.addEventListener("lostpointercapture", release);
+      this.bindings.push(() => button.removeEventListener("pointerdown", press), () => button.removeEventListener("pointerup", release), () => button.removeEventListener("pointercancel", release), () => button.removeEventListener("lostpointercapture", release));
+    }
+    const canvas = this.root.querySelector?.("#game-canvas");
+    const mouseAttack = (event) => { if (event.pointerType === "mouse" && event.button === 0) this.#press("attack"); };
+    canvas?.addEventListener("pointerdown", mouseAttack); this.bindings.push(() => canvas?.removeEventListener("pointerdown", mouseAttack));
   }
-
-  vector() {
-    const x = Number(this.active.has("east")) - Number(this.active.has("west"));
-    const y = Number(this.active.has("south")) - Number(this.active.has("north"));
-    if (x || y) { const length = Math.hypot(x, y); return { x: x / length, y: y / length }; }
-    return { ...this.analog };
+  snapshot() {
+    return { horizontal: Number(this.held.has("right")) - Number(this.held.has("left")), jumpHeld: this.held.has("jump"), jumpPressed: this.consume("jump"), attackPressed: this.consume("attack"), interactPressed: this.consume("interact") };
   }
-
-  consumeInteraction() {
-    if (!this.interactions) return false;
-    this.interactions -= 1;
-    return true;
+  consume(action) { const count = this.pressed.get(action) ?? 0; if (!count) return false; this.pressed.set(action, count - 1); return true; }
+  setInteractionAvailable(available, label = "ВЗАИМОДЕЙСТВОВАТЬ") {
+    const button = this.root.querySelector?.("[data-control='interact']"); if (!button) return;
+    button.hidden = !available; button.disabled = !available;
+    const text = button.querySelector?.("[data-interact-label]"); if (text) text.textContent = label;
   }
-
-  setInteractionAvailable(available, label = "Действие") {
-    const button = this.root.querySelector("[data-interact]");
-    if (!button) return;
-    button.disabled = !available;
-    const text = button.querySelector("[data-interact-label]");
-    if (text) text.textContent = label;
-  }
-
-  destroy() { this.bindings.forEach((unbind) => unbind()); this.bindings = []; this.active.clear(); }
+  clear() { this.held.clear(); this.pressed.clear(); }
+  destroy() { this.bindings.forEach((unbind) => unbind()); this.bindings = []; this.clear(); }
+  #press(action) { this.pressed.set(action, (this.pressed.get(action) ?? 0) + 1); }
 }

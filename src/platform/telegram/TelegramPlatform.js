@@ -12,7 +12,6 @@ export class TelegramPlatform extends BrowserPlatform {
     this.webApp.ready();
     this.webApp.expand();
     this.webApp.disableVerticalSwipes?.();
-    this.requestLandscape();
   }
 
   onPause(handler) {

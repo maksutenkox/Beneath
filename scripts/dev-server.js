@@ -22,5 +22,5 @@ createServer((request, response) => {
   response.writeHead(200, { "Content-Type": mime[extname(filePath)] || "application/octet-stream", "Cache-Control": "no-store" });
   createReadStream(filePath).pipe(response);
 }).listen(port, "127.0.0.1", () => {
-  console.log(`Убежище: http://127.0.0.1:${port}`);
+  console.log(`Below Protocol: http://127.0.0.1:${port}`);
 });
