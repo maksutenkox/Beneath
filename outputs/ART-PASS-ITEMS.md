@@ -4,7 +4,7 @@
 
 Игра: https://beneath-byz.pages.dev/
 
-Кнопка меню Telegram ведёт на стабильный Cloudflare Pages адрес. Токен не сохранён в проекте. Настройка воспроизводится через `scripts/connect-telegram.mjs` с переменной окружения `TELEGRAM_BOT_TOKEN`; скрипт не входит в клиентскую сборку.
+Кнопка меню `Play BELOW PROTOCOL` ведёт на стабильный Cloudflare Pages адрес. Telegram API подтвердил настройки обратным чтением. Токен не сохранён в проекте. Настройка воспроизводится через `scripts/connect-telegram.mjs` с переменной окружения `TELEGRAM_BOT_TOKEN`; скрипт не входит в клиентскую сборку.
 
 ## Новый визуальный набор side-view
 

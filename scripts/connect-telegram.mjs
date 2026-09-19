@@ -17,7 +17,7 @@ async function call(method, body = {}) {
 }
 try {
   const bot = await call('getMe');
-  const menu_button = {type:'web_app', text:'Play BENEATH', web_app:{url:appUrl}};
+  const menu_button = {type:'web_app', text:'Play BELOW PROTOCOL', web_app:{url:appUrl}};
   const accepted = await call('setChatMenuButton', {menu_button});
   const actual = await call('getChatMenuButton');
   console.log(JSON.stringify({bot:bot.username, accepted, actual}, null, 2));
