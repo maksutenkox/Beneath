@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { hubMap } from "../src/game/map/HubMap.js";
+import { OfficeLevelGenerator } from "../src/game/map/OfficeLevelGenerator.js";
 import { SideViewCollisionWorld } from "../src/game/physics/SideViewCollisionWorld.js";
 import { PLAYER_TUNING, PlayerController, createPlayer } from "../src/game/player/PlayerController.js";
 import { SideViewCamera } from "../src/game/camera/SideViewCamera.js";
@@ -11,6 +12,7 @@ import { HealthSystem, heartStates } from "../src/game/health/HealthSystem.js";
 import { HubInteractionSystem } from "../src/game/interaction/HubInteractionSystem.js";
 import { InputController } from "../src/game/input/InputController.js";
 import { SaveStore } from "../src/game/save/SaveStore.js";
+import { ZombieSystem } from "../src/game/enemy/ZombieSystem.js";
 
 const pngSize = (path) => {
   const bytes = readFileSync(path);
@@ -113,12 +115,40 @@ test("health renders three full/half/empty hearts for six HP units", () => {
   assert.equal(player.hp, 6);
 });
 
-test("context interaction finds the closest HUB station and keeps expeditions locked", () => {
+test("context interaction finds the closest HUB station and opens the office route", () => {
   const interactions = new HubInteractionSystem(hubMap.interactables);
   const player = { x: 835, y: hubMap.floorY - 82, width: 34, height: 82 };
   assert.equal(interactions.nearest(player).type, "workbench");
   const expedition = interactions.interact(hubMap.interactables.find(({ type }) => type === "expedition"));
-  assert.match(expedition.message, /COMING NEXT/);
+  assert.equal(expedition.transition, "office");
+});
+
+test("office floors are deterministic, traversable and vary by seed and floor", () => {
+  const generator = new OfficeLevelGenerator();
+  const first = generator.generate(77, 1), repeated = generator.generate(77, 1), next = generator.generate(77, 2);
+  assert.deepEqual(first.backgroundTiles, repeated.backgroundTiles);
+  assert.deepEqual(first.enemies, repeated.enemies);
+  assert.notEqual(first.id, next.id);
+  assert.ok(first.enemies.length >= 4);
+  assert.equal(first.interactables.at(-1).type, "next-floor");
+  assert.ok(first.colliders.some(({ kind }) => kind === "obstacle"));
+});
+
+test("office zombie attacks the player, takes keyboard damage and can die", () => {
+  const world = new SideViewCollisionWorld([{ x: 0, y: 100, width: 500, height: 50 }]);
+  const zombies = new ZombieSystem(world);
+  const [enemy] = zombies.initialize([{ id: "employee", x: 125, y: 18, patrolRadius: 50 }]);
+  const player = { x: 100, y: 18, width: 34, height: 82, hp: 6 };
+  enemy.attackCooldown = 0;
+  zombies.update([enemy], player, .05);
+  let events = [];
+  for (let index = 0; index < 5 && !events.length; index += 1) events = zombies.update([enemy], player, .05);
+  assert.equal(events[0].damage, 1);
+  assert.equal(zombies.damage(enemy, 2, player.x), true);
+  enemy.hurtTime = 0;
+  assert.equal(zombies.damage(enemy, 1, player.x), true);
+  assert.equal(enemy.hp, 0);
+  assert.equal(enemy.animation, "death");
 });
 
 test("input maps desktop controls and consumes edge presses once", () => {
@@ -143,19 +173,32 @@ test("input maps desktop controls and consumes edge presses once", () => {
   input.destroy();
 });
 
-test("save store accepts only Below Protocol version three data", async () => {
+test("save store accepts current version four and migratable version three data", async () => {
   const values = new Map();
   const storage = { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) };
   const store = new SaveStore(storage);
-  await store.save({ version: 3, player: { hp: 5 } });
+  await store.save({ version: 4, player: { hp: 5 } });
   assert.equal((await store.load()).player.hp, 5);
+  values.set("below-protocol.save.v1", JSON.stringify({ version: 3, player: { hp: 4 } }));
+  assert.equal((await store.load()).player.hp, 4);
   values.set("below-protocol.save.v1", JSON.stringify({ version: 2 }));
   assert.equal(await store.load(), null);
 });
 
 test("authored pixel atlases have exact runtime dimensions", () => {
-  assert.deepEqual(pngSize("src/game/assets/below-protocol/heroine-side.png"), { width: 512, height: 480 });
+  assert.deepEqual(pngSize("src/game/assets/below-protocol/heroine-side.png"), { width: 768, height: 560 });
   assert.deepEqual(pngSize("src/game/assets/below-protocol/hub-props.png"), { width: 512, height: 512 });
+  assert.deepEqual(pngSize("src/game/assets/below-protocol/office-zombie.png"), { width: 768, height: 448 });
+  assert.deepEqual(pngSize("src/game/assets/below-protocol/office-backdrops.png"), { width: 1024, height: 512 });
+});
+
+test("hero preparation keeps one fixed source scale instead of resizing every pose independently", () => {
+  const preparation = readFileSync("scripts/prepare-below-protocol-assets.cjs", "utf8");
+  assert.match(preparation, /fixedCell/);
+  assert.doesNotMatch(preparation, /\.trim\(|fit:\s*["']inside/);
+  for (const name of ["hero-1-0.png", "hero-1-3.png", "hero-1-7.png"]) {
+    assert.deepEqual(pngSize(`src/game/assets/below-protocol/${name}`), { width: 96, height: 112 });
+  }
 });
 
 test("mobile shell is portrait, four-button, nearest-neighbor and Telegram-ready", () => {

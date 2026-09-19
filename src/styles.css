@@ -6,16 +6,18 @@
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body, #app { width: 100%; height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; }
-body { background: #070b0e; touch-action: none; }
+body { display: flex; align-items: center; justify-content: center; background: #030608; touch-action: none; }
 button { font: inherit; user-select: none; }
 .game-shell { position: relative; isolation: isolate; width: 100%; height: 100%; }
 #game-canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; image-rendering: crisp-edges; background: #070b0e; }
-.health-hud { position: absolute; z-index: 4; top: calc(16px + var(--safe-top)); left: calc(16px + var(--safe-left)); display: flex; gap: 7px; filter: drop-shadow(2px 3px #050708); }
-.heart { position: relative; display: block; width: 25px; height: 22px; background: #291b1c; clip-path: polygon(0 18%,16% 0,42% 0,50% 13%,58% 0,84% 0,100% 18%,100% 48%,50% 100%,0 48%); }
-.heart::after { content: ""; position: absolute; inset: 3px; background: #742f32; clip-path: inherit; }
-.heart--full::after { background: #cf4b45; box-shadow: inset 0 -5px #8d302f; }
-.heart--half::after { background: linear-gradient(90deg,#cf4b45 0 50%,#432426 50%); }
-.heart--empty::after { background: #241719; }
+.health-hud { position: absolute; z-index: 4; top: calc(16px + var(--safe-top)); left: calc(16px + var(--safe-left)); display: flex; gap: 8px; filter: drop-shadow(3px 3px #050708); }
+.heart { position: relative; display: block; width: 28px; height: 24px; background: #120b0d; clip-path: polygon(0 8px,4px 8px,4px 4px,8px 4px,8px 0,12px 0,12px 4px,16px 4px,16px 0,20px 0,20px 4px,24px 4px,24px 8px,28px 8px,28px 16px,24px 16px,24px 20px,20px 20px,20px 24px,8px 24px,8px 20px,4px 20px,4px 16px,0 16px); }
+.heart::after { content: ""; position: absolute; inset: 4px; background: #321619; clip-path: polygon(0 4px,4px 4px,4px 0,8px 0,8px 4px,12px 4px,12px 0,16px 0,16px 4px,20px 4px,20px 12px,16px 12px,16px 16px,12px 16px,12px 20px,8px 20px,8px 16px,4px 16px,4px 12px,0 12px); }
+.heart--full::after { background: linear-gradient(#f06a56 0 25%,#cb443f 25% 65%,#852b32 65%); }
+.heart--half::after { background: linear-gradient(90deg,#d94b43 0 50%,#321619 50%); }
+.heart--empty::after { background: #241316; }
+.run-hud { position: absolute; z-index: 4; top: calc(54px + var(--safe-top)); left: calc(16px + var(--safe-left)); display: grid; gap: 1px; padding: 5px 7px; border-left: 3px solid #b84738; background: rgb(5 10 12 / 72%); text-shadow: 2px 2px #050708; }
+.run-hud[hidden] { display: none; }.run-hud strong { color: #e1b466; font-size: 9px; }.run-hud span { color: #b85549; font-size: 7px; }
 .system-label { position: absolute; z-index: 3; top: calc(14px + var(--safe-top)); right: calc(14px + var(--safe-right)); display: grid; justify-items: end; gap: 1px; color: #778385; pointer-events: none; text-shadow: 2px 2px #06090a; }
 .system-label strong { color: #c79652; font-size: 11px; letter-spacing: .15em; }.system-label span { font-size: 7px; }.system-label small { color: #526164; font-size: 6px; }
 .mobile-controls { position: absolute; z-index: 5; inset: auto 0 0; height: 188px; pointer-events: none; padding-bottom: var(--safe-bottom); }
@@ -34,6 +36,7 @@ button { font: inherit; user-select: none; }
 .status-toast { position: absolute; z-index: 12; top: calc(82px + var(--safe-top)); left: 50%; width: min(320px, calc(100vw - 32px)); transform: translateX(-50%); padding: 12px; border: 1px solid #b27f3c; background: rgb(20 18 14 / 95%); color: #e0b66e; font-size: 10px; text-align: center; letter-spacing: .06em; box-shadow: 4px 5px 0 rgb(0 0 0 / 44%); }.status-toast[hidden] { display: none; }
 .landscape-hint { display: none; }
 .desktop-ui .mobile-controls { opacity: .28; }.desktop-ui .mobile-controls:hover { opacity: .72; }
+html.desktop-ui #app { width: min(100%, 405px); height: min(100%, 720px); box-shadow: 0 0 0 1px #172024, 0 0 70px #000; }
 @media (orientation: landscape) and (max-height: 560px) {
   .landscape-hint { position: absolute; z-index: 20; inset: 0; display: grid; place-content: center; gap: 8px; background: rgb(6 9 11 / 94%); color: #d5b273; text-align: center; }.landscape-hint span { color: #899393; font-size: 11px; }
 }

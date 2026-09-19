@@ -2,6 +2,7 @@ export class SideViewCamera {
   constructor({ worldWidth, worldHeight, floorY, followSpeed = 7, lookAhead = 92, deadZoneX = 42, deadZoneY = 70 }) {
     Object.assign(this, { worldWidth, worldHeight, floorY, followSpeed, lookAhead, deadZoneX, deadZoneY });
   }
+  setBounds({ width, height, floorY }) { this.worldWidth = width; this.worldHeight = height; this.floorY = floorY; }
   initialize(player, viewport = { width: 360, height: 640 }) {
     return { x: Math.max(0, player.x - viewport.width * .38), y: Math.max(0, this.floorY - viewport.height * .72), width: viewport.width, height: viewport.height };
   }
@@ -22,4 +23,3 @@ export class SideViewCamera {
     return camera;
   }
 }
-

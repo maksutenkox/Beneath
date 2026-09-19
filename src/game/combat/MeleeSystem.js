@@ -22,7 +22,7 @@ export class MeleeSystem {
       for (const target of targets) {
         if (!rectanglesOverlap(box, target)) continue;
         target.hitTime = .18; target.hits = (target.hits ?? 0) + 1;
-        hits.push({ id: target.id, damage: this.damage, serial: state.serial });
+        hits.push({ id: target.id, damage: player.attackDamage ?? this.damage, serial: state.serial });
       }
       state.connected = hits.length > 0;
     }
@@ -33,4 +33,3 @@ export class MeleeSystem {
     return { x: player.facing > 0 ? player.x + player.width - 2 : player.x - 58, y: player.y + 20, width: 60, height: 48 };
   }
 }
-

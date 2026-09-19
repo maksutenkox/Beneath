@@ -11,7 +11,7 @@ export class SaveStore {
       const raw = this.storage.getItem(this.key);
       if (!raw) return null;
       const parsed = JSON.parse(raw);
-      return parsed?.version === 3 ? parsed : null;
+      return [3, 4].includes(parsed?.version) ? parsed : null;
     } catch {
       return null;
     }

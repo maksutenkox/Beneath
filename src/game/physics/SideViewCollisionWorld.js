@@ -3,6 +3,8 @@ const overlaps = (a, b) => a.x < b.x + b.width && a.x + a.width > b.x && a.y < b
 export class SideViewCollisionWorld {
   constructor(colliders = []) { this.colliders = colliders.map((item) => ({ ...item })); }
 
+  replace(colliders = []) { this.colliders = colliders.map((item) => ({ ...item })); }
+
   intersects(rect) { return this.colliders.some((collider) => overlaps(rect, collider)); }
 
   move(body, dx, dy) {
@@ -26,4 +28,3 @@ export class SideViewCollisionWorld {
 }
 
 export { overlaps as rectanglesOverlap };
-

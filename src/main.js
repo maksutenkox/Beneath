@@ -1,15 +1,18 @@
 import { GameCore } from "./game/core/GameCore.js";
 import { hubMap } from "./game/map/HubMap.js";
+import { OfficeLevelGenerator } from "./game/map/OfficeLevelGenerator.js";
 import { SideViewCollisionWorld } from "./game/physics/SideViewCollisionWorld.js";
 import { PlayerController } from "./game/player/PlayerController.js";
 import { SideViewCamera } from "./game/camera/SideViewCamera.js";
 import { HubInteractionSystem } from "./game/interaction/HubInteractionSystem.js";
 import { MeleeSystem } from "./game/combat/MeleeSystem.js";
 import { HealthSystem } from "./game/health/HealthSystem.js";
+import { ZombieSystem } from "./game/enemy/ZombieSystem.js";
 import { HubScene } from "./game/rendering/HubScene.js";
 import { InputController } from "./game/input/InputController.js";
 import { SaveStore } from "./game/save/SaveStore.js";
 import { HeartsHud } from "./platform/ui/HeartsHud.js";
+import { RunHud } from "./platform/ui/RunHud.js";
 import { WorkbenchPanel } from "./platform/ui/WorkbenchPanel.js";
 import { StatusToast } from "./platform/ui/StatusToast.js";
 import { AudioSystem } from "./game/audio/AudioSystem.js";
@@ -29,7 +32,8 @@ const game = new GameCore({
   playerController: new PlayerController(collisionWorld),
   camera: new SideViewCamera({ worldWidth: hubMap.width, worldHeight: hubMap.height, floorY: hubMap.floorY }),
   interactions: new HubInteractionSystem(hubMap.interactables), melee: new MeleeSystem(), health: new HealthSystem(),
-  heartsHud: new HeartsHud(document), workbenchPanel: new WorkbenchPanel(document), statusToast: new StatusToast(document), audio
+  zombies: new ZombieSystem(collisionWorld), levelGenerator: new OfficeLevelGenerator(),
+  heartsHud: new HeartsHud(document), runHud: new RunHud(document), workbenchPanel: new WorkbenchPanel(document), statusToast: new StatusToast(document), audio
 });
 
 platform.initialize(); input.initialize();

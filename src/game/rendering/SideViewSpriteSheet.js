@@ -1,11 +1,11 @@
 import { SIDE_VIEW_CLIPS, sideViewFrameAt } from "../animation/SideViewAnimation.js";
 export class SideViewSpriteSheet {
-  constructor({ url, frameWidth = 64, frameHeight = 96, imageFactory = null, clips = SIDE_VIEW_CLIPS }) { Object.assign(this, { url, frameWidth, frameHeight, imageFactory, clips }); this.image = null; this.ready = false; this.failed = false; }
+  constructor({ url, frameWidth = 96, frameHeight = 112, columns = 8, rows = 5, imageFactory = null, clips = SIDE_VIEW_CLIPS }) { Object.assign(this, { url, frameWidth, frameHeight, columns, rows, imageFactory, clips }); this.image = null; this.ready = false; this.failed = false; }
   load() {
     if (this.ready || this.failed) return Promise.resolve(this.ready);
     this.image = (this.imageFactory ?? (() => new Image()))();
     return new Promise((resolve) => {
-      this.image.onload = () => { this.ready = this.image.naturalWidth === this.frameWidth * 8 && this.image.naturalHeight === this.frameHeight * 5; this.failed = !this.ready; resolve(this.ready); };
+      this.image.onload = () => { this.ready = this.image.naturalWidth === this.frameWidth * this.columns && this.image.naturalHeight === this.frameHeight * this.rows; this.failed = !this.ready; resolve(this.ready); };
       this.image.onerror = () => { this.failed = true; resolve(false); }; this.image.src = this.url;
     });
   }

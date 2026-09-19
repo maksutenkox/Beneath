@@ -1,11 +1,11 @@
 {
   "name": "below-protocol",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "node scripts/dev-server.js",
     "test": "node --test",
-    "check": "node --check src/main.js && node --check src/game/core/GameCore.js && node --check src/game/player/PlayerController.js && node --check src/game/physics/SideViewCollisionWorld.js && node --check src/game/camera/SideViewCamera.js && node --check src/game/combat/MeleeSystem.js && node --check src/game/health/HealthSystem.js && node --check src/game/input/InputController.js && node --check src/game/interaction/HubInteractionSystem.js && node --check src/game/map/HubMap.js && node --check src/game/rendering/HubScene.js && node --check src/game/rendering/SideViewSpriteSheet.js && node --check src/game/rendering/HubPropAtlas.js && node --check src/game/audio/AudioSystem.js && node --check src/platform/audio/WebAudioOutput.js && node --check src/platform/telegram/TelegramPlatform.js"
+    "check": "node --check src/main.js && node --check src/game/core/GameCore.js && node --check src/game/player/PlayerController.js && node --check src/game/physics/SideViewCollisionWorld.js && node --check src/game/camera/SideViewCamera.js && node --check src/game/combat/MeleeSystem.js && node --check src/game/enemy/ZombieSystem.js && node --check src/game/health/HealthSystem.js && node --check src/game/input/InputController.js && node --check src/game/interaction/HubInteractionSystem.js && node --check src/game/map/HubMap.js && node --check src/game/map/OfficeLevelGenerator.js && node --check src/game/rendering/HubScene.js && node --check src/game/rendering/SideViewSpriteSheet.js && node --check src/game/rendering/EnemySpriteSheet.js && node --check src/game/rendering/BackdropAtlas.js && node --check src/game/audio/AudioSystem.js && node --check src/platform/audio/WebAudioOutput.js && node --check src/platform/telegram/TelegramPlatform.js"
   }
 }
