@@ -10,6 +10,7 @@ export class GameCore {
   }
   async start() {
     this.renderer.resize();
+    await this.renderer.load?.();
     const loaded = await this.saveStore.load();
     this.#state = this.#restore(loaded);
     this.map = this.#mapForScene(this.#state.scene);

@@ -9,8 +9,14 @@ export class HubScene {
     this.dpr = 1; this.sceneTime = 0; this.viewWidth = 360; this.viewHeight = 640;
     this.heroine = new SideViewSpriteSheet({ url: new URL("../assets/below-protocol/heroine-side.png", import.meta.url).href });
     this.props = new HubPropAtlas(); this.backdrops = new BackdropAtlas(); this.enemies = new EnemySpriteSheet();
-    this.heroine.load(); this.props.load(); this.backdrops.load(); this.enemies.load();
+    this.assetsReady = Promise.all([
+      this.heroine.load(),
+      this.props.load(),
+      this.backdrops.load(),
+      this.enemies.load()
+    ]);
   }
+  load() { return this.assetsReady; }
   setMap(map) { this.map = map; }
   resize() {
     const rect = this.canvas.getBoundingClientRect();
